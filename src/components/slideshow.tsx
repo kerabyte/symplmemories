@@ -4,7 +4,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import type { Photo } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   Carousel,
   CarouselContent,
@@ -33,6 +33,7 @@ export function Slideshow({ photos }: SlideshowProps) {
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-none w-full h-full p-0 border-0 bg-black/90 flex items-center justify-center">
+        <DialogTitle className="sr-only">Photo Slideshow</DialogTitle>
         <Carousel 
             opts={{ loop: true }} 
             plugins={[plugin.current]}
