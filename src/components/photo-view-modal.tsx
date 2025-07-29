@@ -97,8 +97,8 @@ export function PhotoViewModal({ photo, onClose, onUpdatePhoto }: PhotoViewModal
 
   return (
     <Dialog open={!!photo} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col md:flex-row p-0">
-        <div className="w-full md:w-1/2 lg:w-2/3 relative">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col md:flex-row p-0 data-[state=open]:h-full md:data-[state=open]:h-[90vh] data-[state=open]:w-full md:data-[state=open]:w-auto">
+        <div className="w-full h-1/2 md:h-full md:w-1/2 lg:w-2/3 relative">
           <Image
             src={photo.url}
             alt={photo.description}
@@ -108,19 +108,19 @@ export function PhotoViewModal({ photo, onClose, onUpdatePhoto }: PhotoViewModal
             data-ai-hint="wedding photo"
           />
         </div>
-        <div className="w-full md:w-1/2 lg:w-1/3 flex flex-col">
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle className="font-headline">Photo by {photo.author}</DialogTitle>
-            <DialogDescription>{photo.description}</DialogDescription>
+        <div className="w-full h-1/2 md:h-full md:w-1/2 lg:w-1/3 flex flex-col">
+          <DialogHeader className="p-4 md:p-6 pb-2">
+            <DialogTitle className="font-headline text-lg md:text-2xl">Photo by {photo.author}</DialogTitle>
+            <DialogDescription className="text-sm md:text-base">{photo.description}</DialogDescription>
              <p className="text-xs text-muted-foreground pt-1">{formatDistanceToNow(new Date(photo.timestamp), { addSuffix: true })}</p>
           </DialogHeader>
           <div className="flex-1 min-h-0">
              <Tabs defaultValue="comments" className="h-full flex flex-col">
-                <TabsList className="mx-6">
+                <TabsList className="mx-4 md:mx-6">
                     <TabsTrigger value="comments">Comments ({photo.comments.length})</TabsTrigger>
                     <TabsTrigger value="voicenotes">Voice Notes ({photo.voiceNotes.length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="comments" className="flex-1 flex flex-col min-h-0 px-6 pb-6">
+                <TabsContent value="comments" className="flex-1 flex flex-col min-h-0 px-4 md:px-6 pb-4 md:pb-6">
                     <ScrollArea className="flex-1 pr-4 -mr-4">
                         <div className="space-y-4">
                         {photo.comments.map((comment) => (
@@ -143,7 +143,7 @@ export function PhotoViewModal({ photo, onClose, onUpdatePhoto }: PhotoViewModal
                         <Button onClick={handleAddComment} disabled={!newComment.trim()}>Post Comment</Button>
                     </div>
                 </TabsContent>
-                <TabsContent value="voicenotes" className="flex-1 flex flex-col min-h-0 px-6 pb-6">
+                <TabsContent value="voicenotes" className="flex-1 flex flex-col min-h-0 px-4 md:px-6 pb-4 md:pb-6">
                     <ScrollArea className="flex-1 pr-4 -mr-4">
                        <div className="space-y-4">
                          {photo.voiceNotes.map((note) => (

@@ -19,12 +19,14 @@ import type { Photo } from '@/lib/types';
 import { generatePhotoCaption } from '@/ai/flows/generate-photo-caption';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import { DropdownMenuItem } from './ui/dropdown-menu';
 
 interface UploadDialogProps {
   onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => void;
+  isMobile?: boolean;
 }
 
-export function UploadDialog({ onPhotoAdd }: UploadDialogProps) {
+export function UploadDialog({ onPhotoAdd, isMobile }: UploadDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [author, setAuthor] = React.useState('');
   const [description, setDescription] = React.useState('');
@@ -100,15 +102,24 @@ export function UploadDialog({ onPhotoAdd }: UploadDialogProps) {
     }
   };
 
+  const Trigger = isMobile ? (
+    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+        <Camera className="mr-2 h-4 w-4" />
+        Upload Photo
+    </DropdownMenuItem>
+    ) : (
+    <Button>
+        <Camera className="mr-2 h-4 w-4" />
+        Upload Photo
+    </Button>
+  );
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Camera className="mr-2 h-4 w-4" />
-          Upload Photo
-        </Button>
+        {Trigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[480px] w-full max-w-[90vw] rounded-lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Upload Your Memory</DialogTitle>

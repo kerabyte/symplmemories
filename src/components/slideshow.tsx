@@ -14,23 +14,34 @@ import {
 } from '@/components/ui/carousel';
 import { Play } from 'lucide-react';
 import Autoplay from "embla-carousel-autoplay"
+import { DropdownMenuItem } from './ui/dropdown-menu';
 
 interface SlideshowProps {
   photos: Photo[];
+  isMobile?: boolean;
 }
 
-export function Slideshow({ photos }: SlideshowProps) {
+export function Slideshow({ photos, isMobile }: SlideshowProps) {
   const plugin = React.useRef(
     Autoplay({ delay: 4000, stopOnInteraction: true })
   )
 
+  const Trigger = isMobile ? (
+     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+        <Play className="mr-2 h-4 w-4" />
+        Slideshow
+    </DropdownMenuItem>
+  ) : (
+    <Button variant="outline">
+      <Play className="mr-2 h-4 w-4" />
+      Slideshow
+    </Button>
+  );
+
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <Play className="mr-2 h-4 w-4" />
-          Slideshow
-        </Button>
+        {Trigger}
       </DialogTrigger>
       <DialogContent className="max-w-none w-full h-full p-0 border-0 bg-black/90 flex items-center justify-center">
         <DialogTitle className="sr-only">Photo Slideshow</DialogTitle>
