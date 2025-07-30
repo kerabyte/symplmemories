@@ -1,9 +1,10 @@
+
 "use client";
 
 import * as React from 'react';
 import type { Photo } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Camera, EllipsisVertical, Play } from 'lucide-react';
+import { Home, EllipsisVertical } from 'lucide-react';
 import { UploadDialog } from './upload-dialog';
 import { Slideshow } from './slideshow';
 import { PhotoCard } from './photo-card';
@@ -15,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useIsMobile } from '@/hooks/use-mobile';
+import Link from 'next/link';
 
 
 export function PhotoGallery({ initialPhotos }: { initialPhotos: Photo[] }) {
@@ -55,6 +57,12 @@ export function PhotoGallery({ initialPhotos }: { initialPhotos: Photo[] }) {
           <DropdownMenuContent align="end">
             <UploadDialog onPhotoAdd={addPhoto} isMobile={true}/>
             <Slideshow photos={photos} isMobile={true} />
+            <DropdownMenuItem asChild>
+                <Link href="/">
+                    <Home className="mr-2 h-4 w-4" />
+                    Home
+                </Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -62,6 +70,12 @@ export function PhotoGallery({ initialPhotos }: { initialPhotos: Photo[] }) {
 
     return (
         <div className="flex items-center gap-2 md:gap-4">
+            <Link href="/" passHref>
+                <Button variant="outline">
+                    <Home className="mr-2 h-4 w-4" />
+                    Home
+                </Button>
+            </Link>
             <UploadDialog onPhotoAdd={addPhoto} isMobile={false} />
             <Slideshow photos={photos} isMobile={false}/>
         </div>
@@ -73,7 +87,7 @@ export function PhotoGallery({ initialPhotos }: { initialPhotos: Photo[] }) {
       <header className="py-4 px-4 md:px-8 sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl md:text-4xl font-headline text-foreground">
-            Ever After Album
+            Photo Gallery
           </h1>
           {renderHeaderActions()}
         </div>

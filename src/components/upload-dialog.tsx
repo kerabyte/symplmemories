@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -24,9 +25,10 @@ import { DropdownMenuItem } from './ui/dropdown-menu';
 interface UploadDialogProps {
   onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => void;
   isMobile?: boolean;
+  trigger?: React.ReactNode;
 }
 
-export function UploadDialog({ onPhotoAdd, isMobile }: UploadDialogProps) {
+export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [author, setAuthor] = React.useState('');
   const [description, setDescription] = React.useState('');
@@ -102,7 +104,7 @@ export function UploadDialog({ onPhotoAdd, isMobile }: UploadDialogProps) {
     }
   };
 
-  const Trigger = isMobile ? (
+  const Trigger = trigger ? trigger : (isMobile ? (
     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
         <Camera className="mr-2 h-4 w-4" />
         Upload Photo
@@ -112,7 +114,7 @@ export function UploadDialog({ onPhotoAdd, isMobile }: UploadDialogProps) {
         <Camera className="mr-2 h-4 w-4" />
         Upload Photo
     </Button>
-  );
+  ));
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
