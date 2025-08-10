@@ -20,18 +20,16 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
   React.useEffect(() => {
     const decodedCategoryName = decodeURIComponent(params.category);
-    setCategoryName(decodedCategoryName);
-
+    
+    const categoryExists = allPhotos.some(p => p.category === decodedCategoryName);
     const filteredPhotos = allPhotos.filter(p => p.category === decodedCategoryName);
-    
-    // Check if the category is valid at all. If not, show a 404 page.
-    if (filteredPhotos.length === 0) {
-      const isValidCategory = allPhotos.some(p => p.category === decodedCategoryName);
-      if (!isValidCategory) {
-        notFound();
-      }
+
+    if (!categoryExists) {
+      notFound();
+      return;
     }
-    
+
+    setCategoryName(decodedCategoryName);
     setPhotos(filteredPhotos);
   }, [params]);
 
