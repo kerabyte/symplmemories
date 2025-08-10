@@ -52,7 +52,7 @@ export default function Home() {
             className="w-full h-screen absolute inset-0">
           <CarouselContent className="h-full">
             {backgroundImages.map((photo, index) => (
-              <CarouselItem key={photo.id} className="h-full">
+              <CarouselItem key={photo.id} className="h-full embla__fade">
                 <div className="w-full h-full relative">
                   <Image
                     src={photo.url}
