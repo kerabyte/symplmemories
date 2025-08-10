@@ -15,23 +15,25 @@ interface CategoryPageProps {
 
 export default function CategoryPage({ params }: CategoryPageProps) {
   const router = useRouter();
-  const categoryName = decodeURIComponent(params.category);
-
+  const [categoryName, setCategoryName] = React.useState('');
   const [photos, setPhotos] = React.useState<Photo[]>([]);
 
   React.useEffect(() => {
-    const filteredPhotos = allPhotos.filter(p => p.category === categoryName);
+    const decodedCategoryName = decodeURIComponent(params.category);
+    setCategoryName(decodedCategoryName);
+
+    const filteredPhotos = allPhotos.filter(p => p.category === decodedCategoryName);
     
+    // Check if the category is valid at all. If not, show a 404 page.
     if (filteredPhotos.length === 0) {
-      // Check if the category is valid at all. If not, show a 404 page.
-      const isValidCategory = allPhotos.some(p => p.category === categoryName);
+      const isValidCategory = allPhotos.some(p => p.category === decodedCategoryName);
       if (!isValidCategory) {
         notFound();
       }
     }
     
     setPhotos(filteredPhotos);
-  }, [categoryName]);
+  }, [params.category]);
 
 
   const handleAddPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => {
@@ -53,6 +55,11 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         router.push(`/gallery/${newPhotoData.category}`);
     }
   };
+
+  if (!categoryName) {
+    // Render a loading state or nothing while the category is being determined.
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
