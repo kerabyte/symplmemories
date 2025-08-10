@@ -4,7 +4,7 @@
 import * as React from 'react';
 import type { Photo } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Home, EllipsisVertical } from 'lucide-react';
+import { Home, EllipsisVertical, Play, Camera } from 'lucide-react';
 import { UploadDialog } from './upload-dialog';
 import { Slideshow } from './slideshow';
 import { PhotoCard } from './photo-card';
@@ -47,24 +47,26 @@ export function PhotoGallery({ initialPhotos }: { initialPhotos: Photo[] }) {
   const renderHeaderActions = () => {
     if (isMobile) {
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <div className="flex items-center gap-1">
+          <Link href="/" passHref>
             <Button variant="ghost" size="icon">
-              <EllipsisVertical />
-              <span className="sr-only">More options</span>
+              <Home />
+              <span className="sr-only">Home</span>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <UploadDialog onPhotoAdd={addPhoto} isMobile={true}/>
-            <Slideshow photos={photos} isMobile={true} />
-            <DropdownMenuItem asChild>
-                <Link href="/">
-                    <Home className="mr-2 h-4 w-4" />
-                    Home
-                </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </Link>
+          <UploadDialog onPhotoAdd={addPhoto} trigger={
+            <Button variant="ghost" size="icon">
+              <Camera />
+              <span className="sr-only">Upload Photo</span>
+            </Button>
+          } />
+          <Slideshow photos={photos} trigger={
+             <Button variant="ghost" size="icon">
+              <Play />
+              <span className="sr-only">Slideshow</span>
+            </Button>
+          } />
+        </div>
       )
     }
 

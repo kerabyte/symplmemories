@@ -20,14 +20,15 @@ import { DropdownMenuItem } from './ui/dropdown-menu';
 interface SlideshowProps {
   photos: Photo[];
   isMobile?: boolean;
+  trigger?: React.ReactNode;
 }
 
-export function Slideshow({ photos, isMobile }: SlideshowProps) {
+export function Slideshow({ photos, isMobile, trigger }: SlideshowProps) {
   const plugin = React.useRef(
     Autoplay({ delay: 4000, stopOnInteraction: true })
   )
 
-  const Trigger = isMobile ? (
+  const Trigger = trigger ? trigger : (isMobile ? (
      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
         <Play className="mr-2 h-4 w-4" />
         Slideshow
@@ -37,7 +38,7 @@ export function Slideshow({ photos, isMobile }: SlideshowProps) {
       <Play className="mr-2 h-4 w-4" />
       Slideshow
     </Button>
-  );
+  ));
 
   return (
     <Dialog>
