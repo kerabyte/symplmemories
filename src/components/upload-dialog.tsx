@@ -21,6 +21,9 @@ import { generatePhotoCaption } from '@/ai/flows/generate-photo-caption';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenuItem } from './ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+
+type Category = Photo['category'];
 
 interface UploadDialogProps {
   onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => void;
@@ -28,10 +31,13 @@ interface UploadDialogProps {
   trigger?: React.ReactNode;
 }
 
+const categories: Category[] = ['Ceremony', 'Reception', 'Couple Portraits', 'Group Photos', 'Details'];
+
 export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [author, setAuthor] = React.useState('');
   const [description, setDescription] = React.useState('');
+  const [category, setCategory] = React.useState<Category | ''>('');
   const [photoFile, setPhotoFile] = React.useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
@@ -82,16 +88,17 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
   
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (photoPreview && author) {
+    if (photoPreview && author && category) {
       setIsUploading(true);
       // Simulate upload delay
       setTimeout(() => {
-        onPhotoAdd({ url: photoPreview, author, description });
+        onPhotoAdd({ url: photoPreview, author, description, category });
         setIsUploading(false);
         setOpen(false);
         // Reset form
         setAuthor('');
         setDescription('');
+        setCategory('');
         setPhotoFile(null);
         setPhotoPreview(null);
       }, 1000);
@@ -99,7 +106,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
        toast({
         variant: "destructive",
         title: "Incomplete Form",
-        description: "Please provide a photo and your name.",
+        description: "Please provide a photo, your name, and a category.",
       });
     }
   };
@@ -142,6 +149,19 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
             <div className="space-y-2">
               <Label htmlFor="author">Your Name</Label>
               <Input id="author" value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="e.g., Jane Doe" required />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select value={category} onValueChange={(value) => setCategory(value as Category)} required>
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
                 <div className="flex justify-between items-center">

@@ -13,11 +13,12 @@ export interface VoiceNote {
 }
 
 export interface Photo {
-  id: string;
+  id:string;
   url: string;
   description: string;
   timestamp: string;
   author: string;
+  category: 'Ceremony' | 'Reception' | 'Couple Portraits' | 'Group Photos' | 'Details';
   comments: Comment[];
   voiceNotes: VoiceNote[];
 }

@@ -7,6 +7,7 @@ export const photos: Photo[] = [
     description: 'The happy couple sharing a laugh during the ceremony.',
     author: 'Aunt Carol',
     timestamp: '2023-10-26T14:30:00Z',
+    category: 'Ceremony',
     comments: [
       { id: 'c1', author: 'Cousin Mike', text: 'Such a beautiful moment!', timestamp: '2023-10-26T15:00:00Z' },
       { id: 'c2', author: 'Grandma Sue', text: 'You both look so happy. ❤️', timestamp: '2023-10-26T15:05:00Z' },
@@ -19,6 +20,7 @@ export const photos: Photo[] = [
     description: 'First dance as husband and wife.',
     author: 'Best Man John',
     timestamp: '2023-10-26T19:45:00Z',
+    category: 'Reception',
     comments: [
       { id: 'c3', author: 'Maid of Honor Jess', text: 'I was crying! So romantic.', timestamp: '2023-10-26T20:00:00Z' },
     ],
@@ -30,6 +32,7 @@ export const photos: Photo[] = [
     description: 'Cutting the beautiful, five-tiered wedding cake.',
     author: 'Uncle Bob',
     timestamp: '2023-10-26T20:15:00Z',
+    category: 'Reception',
     comments: [],
     voiceNotes: [],
   },
@@ -39,6 +42,7 @@ export const photos: Photo[] = [
     description: 'The wedding party all together.',
     author: 'Official Photographer',
     timestamp: '2023-10-26T16:00:00Z',
+    category: 'Group Photos',
     comments: [
        { id: 'c4', author: 'Dad', text: 'Great picture of everyone!', timestamp: '2023-10-26T17:00:00Z' }
     ],
@@ -50,6 +54,7 @@ export const photos: Photo[] = [
     description: 'A quiet moment together after the ceremony.',
     author: 'Maid of Honor Jess',
     timestamp: '2023-10-26T15:20:00Z',
+    category: 'Couple Portraits',
     comments: [],
     voiceNotes: [],
   },
@@ -59,6 +64,7 @@ export const photos: Photo[] = [
     description: 'The flower girl was so adorable!',
     author: 'Guest',
     timestamp: '2023-10-26T14:25:00Z',
+    category: 'Ceremony',
     comments: [],
     voiceNotes: [],
   },
@@ -68,6 +74,7 @@ export const photos: Photo[] = [
     description: 'The send-off with sparklers was magical.',
     author: 'Cousin Dave',
     timestamp: '2023-10-26T22:00:00Z',
+    category: 'Reception',
     comments: [],
     voiceNotes: [],
   },
@@ -77,6 +84,7 @@ export const photos: Photo[] = [
     description: 'The gorgeous table settings.',
     author: 'Mom',
     timestamp: '2023-10-26T18:00:00Z',
+    category: 'Details',
     comments: [
         { id: 'c5', author: 'Wedding Planner', text: 'So glad you liked them!', timestamp: '2023-10-26T18:30:00Z' }
     ],
