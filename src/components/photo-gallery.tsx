@@ -14,12 +14,11 @@ import Link from 'next/link';
 
 interface PhotoGalleryProps {
   initialPhotos: Photo[];
-  onBack?: () => void;
-  categoryName?: string;
+  categoryName: string;
   onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes' | 'category'>) => void;
 }
 
-export function PhotoGallery({ initialPhotos, onBack, categoryName, onPhotoAdd }: PhotoGalleryProps) {
+export function PhotoGallery({ initialPhotos, categoryName, onPhotoAdd }: PhotoGalleryProps) {
   const [photos, setPhotos] = React.useState<Photo[]>(initialPhotos.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
   const [selectedPhoto, setSelectedPhoto] = React.useState<Photo | null>(null);
   const isMobile = useIsMobile();
@@ -82,14 +81,14 @@ export function PhotoGallery({ initialPhotos, onBack, categoryName, onPhotoAdd }
       <header className="py-4 px-4 md:px-8 sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
-            {onBack && (
-              <Button variant="ghost" size="icon" className="mr-2" onClick={onBack}>
-                <ArrowLeft />
-                <span className="sr-only">Back</span>
-              </Button>
-            )}
+              <Link href="/gallery" passHref>
+                <Button variant="ghost" size="icon" className="mr-2">
+                    <ArrowLeft />
+                    <span className="sr-only">Back to Categories</span>
+                </Button>
+              </Link>
             <h1 className="text-2xl md:text-4xl font-headline text-foreground">
-              {categoryName || 'Photo Gallery'}
+              {categoryName}
             </h1>
           </div>
           {renderHeaderActions()}

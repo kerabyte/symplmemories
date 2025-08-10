@@ -2,23 +2,24 @@
 "use client";
 
 import * as React from 'react';
-import { PhotoGallery } from "@/components/photo-gallery";
 import { photos } from "@/lib/mock-data";
 import type { Photo } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Camera, Home, Play } from 'lucide-react';
+import { Camera, Home, Play } from 'lucide-react';
 import Link from 'next/link';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { UploadDialog } from '@/components/upload-dialog';
 import { Slideshow } from '@/components/slideshow';
+import { useRouter } from 'next/navigation';
+
 
 type Category = Photo['category'];
 
 export default function GalleryPage() {
   const [allPhotos, setAllPhotos] = React.useState<Photo[]>(photos);
-  const [selectedCategory, setSelectedCategory] = React.useState<Category | null>(null);
+  const router = useRouter();
   const isMobile = useIsMobile();
   
   const handleAddPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => {
@@ -30,6 +31,8 @@ export default function GalleryPage() {
       voiceNotes: [],
     };
     setAllPhotos(prevPhotos => [newPhoto, ...prevPhotos]);
+    // Navigate to the new photo's category page
+    router.push(`/gallery/${newPhotoData.category}`);
   };
 
   const categories = React.useMemo(() => {
@@ -46,21 +49,6 @@ export default function GalleryPage() {
       thumbnail: photos[0]?.url,
     }));
   }, [allPhotos]);
-
-  const photosForSelectedCategory = allPhotos.filter(p => p.category === selectedCategory);
-
-  if (selectedCategory) {
-    return (
-      <div className="min-h-screen bg-background text-foreground">
-        <PhotoGallery 
-          initialPhotos={photosForSelectedCategory}
-          onBack={() => setSelectedCategory(null)}
-          categoryName={selectedCategory}
-          onPhotoAdd={handleAddPhoto}
-        />
-      </div>
-    );
-  }
 
   const renderHeaderActions = () => {
     if (isMobile) {
@@ -117,29 +105,29 @@ export default function GalleryPage() {
         <h2 className="text-xl md:text-2xl font-headline text-center mb-6 md:mb-8">Categories</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
           {categories.map(category => (
-            <Card
-              key={category.name}
-              className="overflow-hidden cursor-pointer group transition-all duration-300 hover:shadow-xl hover:scale-105 rounded-lg border-border/50"
-              onClick={() => setSelectedCategory(category.name)}
-            >
-              <CardContent className="p-0">
-                <div className="aspect-video relative">
-                  <Image
-                    src={category.thumbnail || 'https://placehold.co/600x400.png'}
-                    alt={`Preview for ${category.name} category`}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-110"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    data-ai-hint="wedding"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <div className="absolute bottom-0 left-0 p-4 md:p-6">
-                    <h3 className="text-white text-lg md:text-2xl font-headline drop-shadow-md">{category.name}</h3>
-                    <p className="text-white/80 text-xs md:text-sm font-light drop-shadow-md">{category.photos.length} photos</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <Link key={category.name} href={`/gallery/${encodeURIComponent(category.name)}`} passHref>
+                <Card
+                className="overflow-hidden cursor-pointer group transition-all duration-300 hover:shadow-xl hover:scale-105 rounded-lg border-border/50"
+                >
+                <CardContent className="p-0">
+                    <div className="aspect-video relative">
+                    <Image
+                        src={category.thumbnail || 'https://placehold.co/600x400.png'}
+                        alt={`Preview for ${category.name} category`}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        data-ai-hint="wedding"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                    <div className="absolute bottom-0 left-0 p-4 md:p-6">
+                        <h3 className="text-white text-lg md:text-2xl font-headline drop-shadow-md">{category.name}</h3>
+                        <p className="text-white/80 text-xs md:text-sm font-light drop-shadow-md">{category.photos.length} photos</p>
+                    </div>
+                    </div>
+                </CardContent>
+                </Card>
+            </Link>
           ))}
         </div>
       </main>
