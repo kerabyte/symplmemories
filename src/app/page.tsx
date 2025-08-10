@@ -72,9 +72,9 @@ export default function Home() {
         </CarouselContent>
       </Carousel>
 
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-between text-center text-white p-4">
-        <div /> 
-        <div>
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center text-white p-4">
+        
+        <div className="flex-grow flex items-center justify-center">
           <div className="bg-black/30 backdrop-blur-sm p-8 rounded-xl shadow-2xl">
             <h1 className="text-5xl md:text-7xl font-headline mb-4">
               Ever After Album
