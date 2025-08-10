@@ -74,28 +74,26 @@ export default function Home() {
 
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center text-white p-4">
         
-        <div className="flex-grow flex items-center justify-center">
-          <div className="bg-black/30 backdrop-blur-sm p-8 rounded-xl shadow-2xl">
-            <h1 className="text-5xl md:text-7xl font-headline mb-4">
-              Ever After Album
-            </h1>
-            <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light">
-              A shared wedding photo album for our special day. Browse the gallery or upload your own memories.
-            </p>
+        <div className="bg-black/30 backdrop-blur-sm p-8 rounded-xl shadow-2xl">
+          <h1 className="text-5xl md:text-7xl font-headline mb-4">
+            Ever After Album
+          </h1>
+          <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light">
+            A shared wedding photo album for our special day. Browse the gallery or upload your own memories.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <UploadDialog onPhotoAdd={addPhoto} trigger={
+              <Button size="lg" className="rounded-full shadow-lg">
+                <Camera className="mr-2" />
+                Upload Your Memory
+              </Button>
+            } />
+            <Link href="/gallery" passHref>
+              <Button size="lg" variant="outline" className="rounded-full shadow-lg bg-white/20 border-white text-white hover:bg-white/30">
+                View Gallery <ArrowRight className="ml-2" />
+              </Button>
+            </Link>
           </div>
-        </div>
-        <div className="relative flex flex-col sm:flex-row items-center gap-4 pb-10">
-          <UploadDialog onPhotoAdd={addPhoto} trigger={
-            <Button size="lg" className="rounded-full shadow-lg">
-              <Camera className="mr-2" />
-              Upload Your Memory
-            </Button>
-          } />
-          <Link href="/gallery" passHref>
-            <Button size="lg" variant="outline" className="rounded-full shadow-lg bg-white/20 border-white text-white hover:bg-white/30">
-              View Gallery <ArrowRight className="ml-2" />
-            </Button>
-          </Link>
         </div>
       </div>
     </div>
