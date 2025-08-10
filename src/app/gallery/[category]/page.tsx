@@ -33,7 +33,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     }
     
     setPhotos(filteredPhotos);
-  }, [params.category]);
+  }, [params]);
 
 
   const handleAddPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => {
@@ -52,7 +52,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       setPhotos(prevPhotos => [newPhoto, ...prevPhotos]);
     } else {
         // If the photo was added to a different category, navigate to that category's page
-        router.push(`/gallery/${newPhotoData.category}`);
+        router.push(`/gallery/${encodeURIComponent(newPhotoData.category)}`);
     }
   };
 
