@@ -24,7 +24,11 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     const categoryExists = allPhotos.some(p => p.category === decodedCategoryName);
     const filteredPhotos = allPhotos.filter(p => p.category === decodedCategoryName);
 
-    if (!categoryExists) {
+    // This check is important. If the category slug is valid but no photos exist,
+    // we still want to render the page with a "no photos" message.
+    // However, if the category itself is not in our known list, we should 404.
+    const knownCategories = [...new Set(allPhotos.map(p => p.category))];
+    if (!knownCategories.includes(decodedCategoryName)) {
       notFound();
       return;
     }
