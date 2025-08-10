@@ -3,27 +3,32 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { photos } from "@/lib/mock-data";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
+import Fade from "embla-carousel-fade";
 import { UploadDialog } from '@/components/upload-dialog';
 import { Button } from '@/components/ui/button';
 import { Camera, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import type { Photo } from '@/lib/types';
 
+const backgroundImages: Pick<Photo, 'id' | 'url' | 'description'>[] = [
+    { id: 'bg-1', url: 'https://tastyspoon.s3.ap-south-1.amazonaws.com/weddingtest/IMG-20250316-WA0013.jpg', description: 'Couple at sunset' },
+    { id: 'bg-2', url: 'https://tastyspoon.s3.ap-south-1.amazonaws.com/weddingtest/IMG-20250316-WA0015+(1).jpg', description: 'Holding hands' },
+    { id: 'bg-3', url: 'https://tastyspoon.s3.ap-south-1.amazonaws.com/weddingtest/IMG-20250316-WA0015.jpg', description: 'Wedding rings' },
+    { id: 'bg-4', url: 'https://tastyspoon.s3.ap-south-1.amazonaws.com/weddingtest/IMG-20250316-WA0017.jpg', description: 'The kiss' },
+];
+
 export default function Home() {
-  const plugin = React.useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: true })
+  const autoplay = React.useRef(
+    Autoplay({ delay: 15000, stopOnInteraction: false })
   );
   
-  const [allPhotos, setAllPhotos] = React.useState<Photo[]>(photos);
+  const [allPhotos, setAllPhotos] = React.useState<Photo[]>([]);
 
   const addPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => {
     const newPhoto: Photo = {
@@ -40,10 +45,10 @@ export default function Home() {
     <div className="min-h-screen w-full relative">
        <Carousel 
             opts={{ loop: true }} 
-            plugins={[plugin.current]}
+            plugins={[autoplay.current, Fade()]}
             className="w-full h-screen">
           <CarouselContent className="h-full">
-            {photos.map((photo) => (
+            {backgroundImages.map((photo, index) => (
               <CarouselItem key={photo.id} className="h-full">
                 <div className="w-full h-full relative">
                   <Image
@@ -52,7 +57,7 @@ export default function Home() {
                     fill
                     className="object-cover"
                     sizes="100vw"
-                    priority={photos.indexOf(photo) === 0}
+                    priority={index === 0}
                     data-ai-hint="wedding couple"
                   />
                   <div className="absolute inset-0 bg-black/40" />
