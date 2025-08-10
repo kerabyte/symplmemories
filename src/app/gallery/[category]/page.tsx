@@ -17,25 +17,22 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   const router = useRouter();
   const categoryName = decodeURIComponent(params.category);
 
-  const [photos, setPhotos] = React.useState<Photo[]>(() => 
-    allPhotos.filter(p => p.category === categoryName)
-  );
+  const [photos, setPhotos] = React.useState<Photo[]>([]);
 
   React.useEffect(() => {
-    // This could be used if photos were fetched from an API
     const filteredPhotos = allPhotos.filter(p => p.category === categoryName);
+    
+    if (filteredPhotos.length === 0) {
+      // Check if the category is valid at all. If not, show a 404 page.
+      const isValidCategory = allPhotos.some(p => p.category === categoryName);
+      if (!isValidCategory) {
+        notFound();
+      }
+    }
+    
     setPhotos(filteredPhotos);
   }, [categoryName]);
 
-
-  if (photos.length === 0) {
-    // A simple way to check if the category is valid is to see if any photos exist for it.
-    // A more robust way might be to have a predefined list of categories.
-     const isValidCategory = allPhotos.some(p => p.category === categoryName);
-     if (!isValidCategory) {
-        notFound();
-     }
-  }
 
   const handleAddPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => {
     const newPhoto: Photo = {
