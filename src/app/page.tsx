@@ -50,7 +50,7 @@ export default function Home() {
        <Carousel 
             opts={{ loop: true }} 
             plugins={[autoplay.current, Fade()]}
-            className="w-full h-screen absolute inset-0">
+            className="w-full h-screen absolute inset-0 z-0">
           <CarouselContent className="h-full">
             {backgroundImages.map((photo, index) => (
               <CarouselItem key={photo.id} className="h-full embla__fade">
@@ -71,7 +71,7 @@ export default function Home() {
           </CarouselContent>
         </Carousel>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center text-white p-4">
             <div className="relative flex-grow flex flex-col items-center justify-center">
                 <div className="bg-black/30 backdrop-blur-sm p-8 rounded-xl shadow-2xl">
                     <h1 className="text-5xl md:text-7xl font-headline mb-4">
