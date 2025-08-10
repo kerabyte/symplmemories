@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -28,6 +27,8 @@ export default function Home() {
     Autoplay({ delay: 15000, stopOnInteraction: false })
   );
   
+  // This state is not used on the homepage but might be for `onPhotoAdd`.
+  // It's kept for consistency with the UploadDialog component props.
   const [allPhotos, setAllPhotos] = React.useState<Photo[]>([]);
 
   const addPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => {
@@ -38,6 +39,8 @@ export default function Home() {
       comments: [],
       voiceNotes: [],
     };
+    // In a real app, you'd likely navigate to the gallery or show a success message.
+    console.log('New photo added:', newPhoto);
     setAllPhotos(prevPhotos => [newPhoto, ...prevPhotos]);
   };
 
@@ -46,7 +49,7 @@ export default function Home() {
        <Carousel 
             opts={{ loop: true }} 
             plugins={[autoplay.current, Fade()]}
-            className="w-full h-screen">
+            className="w-full h-screen absolute inset-0">
           <CarouselContent className="h-full">
             {backgroundImages.map((photo, index) => (
               <CarouselItem key={photo.id} className="h-full">
@@ -68,15 +71,17 @@ export default function Home() {
         </Carousel>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
-            <div className="bg-black/30 backdrop-blur-sm p-8 rounded-xl shadow-2xl">
-                <h1 className="text-5xl md:text-7xl font-headline mb-4">
-                    Ever After Album
-                </h1>
-                <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light">
-                    A shared wedding photo album for our special day. Browse the gallery or upload your own memories.
-                </p>
+            <div className="relative flex-grow flex flex-col items-center justify-center">
+                <div className="bg-black/30 backdrop-blur-sm p-8 rounded-xl shadow-2xl">
+                    <h1 className="text-5xl md:text-7xl font-headline mb-4">
+                        Ever After Album
+                    </h1>
+                    <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light">
+                        A shared wedding photo album for our special day. Browse the gallery or upload your own memories.
+                    </p>
+                </div>
             </div>
-             <div className="absolute bottom-10 flex flex-col sm:flex-row items-center gap-4">
+             <div className="relative flex flex-col sm:flex-row items-center gap-4 pb-10">
                  <UploadDialog onPhotoAdd={addPhoto} trigger={
                      <Button size="lg" className="rounded-full shadow-lg">
                          <Camera className="mr-2"/>
