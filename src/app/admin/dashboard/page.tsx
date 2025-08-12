@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Home } from 'lucide-react';
+import { Home, Images, CheckSquare } from 'lucide-react';
 
 export default function AdminDashboardPage() {
   return (
@@ -20,15 +20,32 @@ export default function AdminDashboardPage() {
         </div>
       </header>
        <main className="container mx-auto p-4 md:p-8">
-         <Card>
-            <CardHeader>
-              <CardTitle>Welcome, Admin!</CardTitle>
-              <CardDescription>This is your dashboard. You can manage your application from here.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Future admin controls and content will go here.</p>
-            </CardContent>
-          </Card>
+         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Images className="h-6 w-6" />
+                  Manage Homepage Carousel
+                </CardTitle>
+                <CardDescription>Select and reorder the images that appear on the main page background slideshow.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button disabled>Go to Carousel Settings</Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckSquare className="h-6 w-6" />
+                  Approve Uploaded Photos
+                </CardTitle>
+                <CardDescription>Review and approve photos uploaded by guests before they appear in the public gallery.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button disabled>Review Submissions</Button>
+              </CardContent>
+            </Card>
+          </div>
        </main>
     </div>
   );
