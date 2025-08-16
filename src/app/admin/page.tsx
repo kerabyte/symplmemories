@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">User Name</Label>
               <Input
                 id="username"
                 type="text"
