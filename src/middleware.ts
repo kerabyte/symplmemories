@@ -17,7 +17,8 @@ async function verifyJWT(token: string) {
 export async function middleware(request: NextRequest) {
   const {pathname} = request.nextUrl;
 
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+  // Logic for protected admin routes (e.g., /admin/dashboard)
+  if (pathname.startsWith('/admin/') && pathname !== '/admin/login') {
     const sessionCookie = request.cookies.get(JWT_COOKIE_NAME);
 
     if (!sessionCookie) {
@@ -27,17 +28,19 @@ export async function middleware(request: NextRequest) {
     const decoded = await verifyJWT(sessionCookie.value);
 
     if (!decoded) {
-      // Clear invalid cookie
+      // Clear invalid cookie and redirect to login
       const response = NextResponse.redirect(new URL('/admin', request.url));
       response.cookies.delete(JWT_COOKIE_NAME);
       return response;
     }
   }
 
-  if (pathname === '/admin/login') {
+  // Logic for the admin login page itself
+  if (pathname === '/admin') {
      const sessionCookie = request.cookies.get(JWT_COOKIE_NAME);
       if (sessionCookie) {
          const decoded = await verifyJWT(sessionCookie.value);
+         // If token is valid, redirect to dashboard
          if (decoded) {
              return NextResponse.redirect(new URL('/admin/dashboard', request.url));
          }
@@ -49,5 +52,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/admin/login'],
+  // Apply middleware to all admin paths except for static assets
+  matcher: ['/admin/:path*', '/admin'],
 };
