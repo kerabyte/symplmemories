@@ -81,8 +81,8 @@ export async function middleware(request: NextRequest) {
   
   // Generate and set the CSRF token on the response for the client to use.
   // This should happen on any response so the client always has a fresh token.
-  const token = generateToken(request, response);
-  response.cookies.set('csrf_token', token, {
+  const csrfToken = generateToken();
+  response.cookies.set('csrf_token', csrfToken, {
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       sameSite: 'strict',
