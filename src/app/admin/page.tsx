@@ -7,31 +7,52 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn } from 'lucide-react';
+import { LogIn, Loader2 } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
-  const [error, setError] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === 'test' && password === 'test') {
-      setError('');
-      toast({
-        title: 'Login Successful',
-        description: 'Redirecting to dashboard...',
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
       });
-      router.push('/admin/dashboard');
-    } else {
-      setError('Invalid username or password');
-      toast({
+
+      const data = await response.json();
+
+      if (response.ok && data.loginStatus) {
+        toast({
+          title: 'Login Successful',
+          description: 'Redirecting to dashboard...',
+        });
+        router.push('/admin/dashboard');
+        router.refresh(); // Refresh to update server-side state like cookies
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: data.issue || 'Invalid username or password.',
+        });
+      }
+    } catch (error) {
+       toast({
         variant: 'destructive',
-        title: 'Login Failed',
-        description: 'Invalid username or password.',
+        title: 'Network Error',
+        description: 'Could not connect to the server. Please try again later.',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -49,10 +70,11 @@ export default function AdminLoginPage() {
               <Input
                 id="username"
                 type="text"
-                placeholder="test"
+                placeholder="Your Provided User Name"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -60,17 +82,17 @@ export default function AdminLoginPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="test"
+                placeholder="Your Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
-             {error && <p className="text-sm font-medium text-destructive">{error}</p>}
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full">
-              <LogIn className="mr-2" />
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <LogIn className="mr-2" />}
               Login
             </Button>
           </CardFooter>
