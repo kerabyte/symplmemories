@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -36,6 +37,7 @@ export default function AdminLoginPage() {
         toast({
           title: 'Login Successful',
           description: 'Redirecting to dashboard...',
+          duration: 3000,
         });
         router.push('/admin/dashboard');
         router.refresh(); // Refresh to update server-side state like cookies
@@ -47,6 +49,7 @@ export default function AdminLoginPage() {
         });
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         variant: 'destructive',
         title: 'Network Error',
