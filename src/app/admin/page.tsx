@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, Loader2 } from 'lucide-react';
+import Cookies from 'js-cookie';
 
 export default function AdminLoginPage() {
   const [username, setUsername] = React.useState('');
@@ -20,11 +21,24 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
+    const csrfToken = Cookies.get('csrf_token');
+
+    if (!csrfToken) {
+        toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: 'Could not verify request. Please refresh and try again.',
+        });
+        setIsLoading(false);
+        return;
+    }
+
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
         },
         body: JSON.stringify({ username, password }),
       });
