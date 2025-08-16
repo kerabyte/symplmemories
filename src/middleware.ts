@@ -17,8 +17,21 @@ async function verifyJWT(token: string) {
 export async function middleware(request: NextRequest) {
   const {pathname} = request.nextUrl;
 
+  // CSRF protection for API routes
+  if (pathname.startsWith('/api/')) {
+    if (request.method === 'POST') {
+      // These headers are expected to be present in requests from the Next.js App Router
+      const isAppRequest = request.headers.get('next-action') || request.headers.get('next-router-state-tree');
+      const isFromSameOrigin = request.headers.get('sec-fetch-site') === 'same-origin';
+
+      if (!isAppRequest || !isFromSameOrigin) {
+         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+  }
+
   // Logic for protected admin routes (e.g., /admin/dashboard)
-  if (pathname.startsWith('/admin/') && pathname !== '/admin/login') {
+  if (pathname.startsWith('/admin/') && pathname !== '/admin') {
     const sessionCookie = request.cookies.get(JWT_COOKIE_NAME);
 
     if (!sessionCookie) {
@@ -52,6 +65,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Apply middleware to all admin paths except for static assets
-  matcher: ['/admin/:path*', '/admin'],
+  // Apply middleware to all admin paths AND api routes
+  matcher: ['/admin/:path*', '/api/admin/login'],
 };
