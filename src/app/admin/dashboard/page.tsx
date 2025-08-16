@@ -1,9 +1,49 @@
+
+"use client";
+
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Home, Images, CheckSquare } from 'lucide-react';
+import { Home, Images, CheckSquare, LogOut, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { fetchWithCsrf } from '@/lib/fetchWithCsrf';
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const response = await fetchWithCsrf('/api/admin/logout', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Logged Out',
+          description: 'You have been successfully logged out.',
+          duration: 3000,
+        });
+        router.push('/admin');
+        router.refresh();
+      } else {
+        throw new Error('Logout failed');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'Could not log out. Please try again.',
+      });
+      setIsLoggingOut(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="py-4 px-4 md:px-8 sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
@@ -11,12 +51,10 @@ export default function AdminDashboardPage() {
           <h1 className="text-2xl md:text-4xl font-headline text-foreground">
             Admin Dashboard
           </h1>
-           <Link href="/" passHref>
-              <Button variant="outline">
-                <Home className="mr-2 h-4 w-4" />
-                Back to Site
-              </Button>
-            </Link>
+          <Button variant="outline" onClick={handleLogout} disabled={isLoggingOut}>
+            {isLoggingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
+            Logout
+          </Button>
         </div>
       </header>
        <main className="container mx-auto p-4 md:p-8">
