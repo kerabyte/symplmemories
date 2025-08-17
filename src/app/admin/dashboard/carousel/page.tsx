@@ -189,10 +189,10 @@ export default function ManageCarouselPage() {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {images.filter(image => image.imageURLs).map((image) => (
               <Card key={image.id} className="group relative overflow-hidden">
-                <CardContent className="p-0 aspect-video">
+                <CardContent className="p-0 aspect-[9/16]">
                   <Image
                     src={image.imageURLs}
                     alt="Carousel Image"
