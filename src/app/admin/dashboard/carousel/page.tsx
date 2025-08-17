@@ -190,9 +190,9 @@ export default function ManageCarouselPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-4">
+      <main className="flex-1 flex flex-col">
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
+          <div className="flex-1 flex justify-center items-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : images.length > 0 ? (
@@ -201,19 +201,19 @@ export default function ManageCarouselPage() {
               align: "center",
               loop: true,
             }}
-            className="w-full h-full"
+            className="w-full h-full flex-1"
           >
             <CarouselContent className="h-full">
               {images.filter(image => image.imageURLs).map((image) => (
                 <CarouselItem key={image.id} className="h-full">
-                  <div className="w-full h-full p-1">
-                    <Card className="group relative overflow-hidden h-full w-full">
+                  <div className="w-full h-full p-0">
+                    <Card className="group relative overflow-hidden h-full w-full rounded-none border-0">
                       <CardContent className="p-0 h-full">
                         <Image
                           src={image.imageURLs}
                           alt="Carousel Image"
                           fill
-                          className="object-contain"
+                          className="object-cover"
                           sizes="100vw"
                         />
                       </CardContent>
@@ -254,7 +254,7 @@ export default function ManageCarouselPage() {
             <CarouselNext className="absolute right-4 text-white bg-black/30 hover:bg-black/50 border-white/50 hover:text-white" />
           </Carousel>
         ) : (
-          <div className="text-center py-16">
+          <div className="flex-1 flex flex-col justify-center items-center text-center py-16">
             <p className="text-muted-foreground">No carousel images found. Add some to get started.</p>
           </div>
         )}
