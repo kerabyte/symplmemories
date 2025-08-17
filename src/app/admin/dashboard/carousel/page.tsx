@@ -190,7 +190,7 @@ export default function ManageCarouselPage() {
           </div>
         ) : (
           <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {images.map((image) => (
+            {images.filter(image => image.imgURL).map((image) => (
               <Card key={image.id} className="group relative overflow-hidden">
                 <CardContent className="p-0 aspect-video">
                   <Image
