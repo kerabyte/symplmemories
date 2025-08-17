@@ -2,24 +2,9 @@
 import { NextResponse } from 'next/server';
 import type {NextRequest} from 'next/server';
 import {jwtVerify} from 'jose';
-import { doubleCsrf } from 'csrf-csrf';
-import { CSRF_HEADER_NAME, CSRF_COOKIE_NAME } from './lib/csrf';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'default-secret-key-that-is-long-enough');
 const JWT_COOKIE_NAME = 'admin_session';
-
-const csrf = doubleCsrf({
-  getSecret: () => process.env.CSRF_SECRET || 'default-csrf-secret-that-is-long-enough', // A secret that is used to hash the token
-  cookieName: CSRF_COOKIE_NAME,
-  cookieOptions: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    sameSite: 'lax',
-  },
-  size: 64, // The size of the generated tokens in bits
-  headerName: CSRF_HEADER_NAME,
-});
 
 async function verifyJWT(token: string) {
   try {
@@ -34,21 +19,29 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. JWT-based authentication for admin routes
-  if (pathname.startsWith('/admin/dashboard')) {
-    const sessionCookie = request.cookies.get(JWT_COOKIE_NAME);
+  if (pathname.startsWith('/admin/dashboard') || pathname.startsWith('/api/admin/')) {
+     if (pathname.startsWith('/api/admin/login') || pathname.startsWith('/api/admin/logout')) {
+         // These routes don't need authentication check themselves
+     } else {
+        const sessionCookie = request.cookies.get(JWT_COOKIE_NAME);
 
-    if (!sessionCookie) {
-      return NextResponse.redirect(new URL('/admin', request.url));
-    }
+        if (!sessionCookie) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/admin'
+          return NextResponse.redirect(url)
+        }
 
-    const decoded = await verifyJWT(sessionCookie.value);
+        const decoded = await verifyJWT(sessionCookie.value);
 
-    if (!decoded) {
-      // Clear invalid cookie and redirect to login
-      const redirectResponse = NextResponse.redirect(new URL('/admin', request.url));
-      redirectResponse.cookies.delete(JWT_COOKIE_NAME);
-      return redirectResponse;
-    }
+        if (!decoded) {
+          // Clear invalid cookie and redirect to login
+          const url = request.nextUrl.clone()
+          url.pathname = '/admin'
+          const redirectResponse = NextResponse.redirect(url);
+          redirectResponse.cookies.delete(JWT_COOKIE_NAME);
+          return redirectResponse;
+        }
+     }
   }
 
   // If user is logged in, redirect them away from the login page
@@ -63,26 +56,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-
-  // 2. Handle CSRF token generation and verification
-  const response = NextResponse.next();
-  const csrfError = await csrf.validateRequest(request, {
-      response,
-  });
-
-  if (csrfError) {
-      console.error(`[CSRF] Failed validation for ${request.method} ${pathname}`, csrfError);
-      return new NextResponse(JSON.stringify({ error: "Invalid CSRF token. Please refresh the page and try again." }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' }
-      });
-  }
-
-  // Generate and set the CSRF token on the response for the client to use.
-  // This should happen on any response so the client always has a fresh token.
-  await csrf.generateToken({request, response});
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
@@ -92,7 +66,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * This ensures the middleware runs on all pages and API routes to set and verify tokens.
+     * This ensures the middleware runs on all pages and API routes.
      */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],

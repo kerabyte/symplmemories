@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Home, Images, CheckSquare, LogOut, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { fetchWithCsrf } from '@/lib/fetchWithCsrf';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -18,7 +17,7 @@ export default function AdminDashboardPage() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      const response = await fetchWithCsrf('/api/admin/logout', {
+      const response = await fetch('/api/admin/logout', {
         method: 'POST',
       });
 

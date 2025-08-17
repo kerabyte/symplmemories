@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, Plus, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
-import { fetchWithCsrf } from '@/lib/fetchWithCsrf';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -51,7 +50,7 @@ export default function ManageCarouselPage() {
   const fetchImages = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetchWithCsrf('/api/admin/carousel/list', { method: 'POST' });
+      const response = await fetch('/api/admin/carousel/list', { method: 'POST' });
       const data = await response.json();
       if (response.ok) {
         setImages(data.carouselImages || []);
@@ -78,7 +77,7 @@ export default function ManageCarouselPage() {
     e.preventDefault();
     setIsAdding(true);
     try {
-      const response = await fetchWithCsrf('/api/admin/carousel/add', {
+      const response = await fetch('/api/admin/carousel/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageURLs: newImageUrls }),
@@ -107,7 +106,7 @@ export default function ManageCarouselPage() {
   const handleDeleteImage = async (carouselID: string) => {
     setIsDeleting(carouselID);
     try {
-      const response = await fetchWithCsrf('/api/admin/carousel/delete', {
+      const response = await fetch('/api/admin/carousel/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ carouselID }),
