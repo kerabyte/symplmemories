@@ -81,7 +81,9 @@ export default function AdminDashboardPage() {
                 <CardDescription>Review and approve photos uploaded by guests before they appear in the public gallery.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button disabled>Review Submissions</Button>
+                <Link href="/admin/dashboard/approve" passHref>
+                  <Button>Review Submissions</Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
