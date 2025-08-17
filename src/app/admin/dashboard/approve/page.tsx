@@ -17,6 +17,44 @@ interface UnapprovedImage {
   createdAt: string;
 }
 
+// Fallback component for when images fail to load
+const ImageWithFallback = ({ src, alt, ...props }: any) => {
+  const [imgSrc, setImgSrc] = React.useState(src);
+  const [hasError, setHasError] = React.useState(false);
+
+  React.useEffect(() => {
+    setImgSrc(src);
+    setHasError(false);
+  }, [src]);
+
+  if (hasError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground">
+        <div className="text-center">
+          <div className="text-4xl mb-2">🖼️</div>
+          <div className="text-sm">Image failed to load</div>
+          <div className="text-xs mt-1 break-all max-w-[200px]">{src}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      {...props}
+      src={imgSrc}
+      alt={alt}
+      onError={() => {
+        console.error('🚨 Image failed to load:', src);
+        setHasError(true);
+      }}
+      onLoad={() => {
+        console.log('✅ Image loaded successfully:', src);
+      }}
+    />
+  );
+};
+
 export default function ApprovePhotosPage() {
   const { toast } = useToast();
   const [images, setImages] = React.useState<UnapprovedImage[]>([]);
@@ -44,6 +82,20 @@ export default function ApprovePhotosPage() {
         const sortedImages = (data.images || []).sort(
           (a: UnapprovedImage, b: UnapprovedImage) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
+
+        // Debug: Log image URLs to check domains
+        console.log('🖼️ Approval Images Debug:', {
+          count: sortedImages.length,
+          imageURLs: sortedImages.map(img => img.imageURL),
+          sampleDomains: [...new Set(sortedImages.map(img => {
+            try {
+              return new URL(img.imageURL).hostname;
+            } catch {
+              return 'Invalid URL';
+            }
+          }))]
+        });
+
         setImages(sortedImages);
         setCurrentIndex(sortedImages.length - 1);
         currentIndexRef.current = sortedImages.length - 1;
@@ -134,7 +186,7 @@ export default function ApprovePhotosPage() {
             </h1>
           </div>
           <div className="text-sm text-muted-foreground">
-             {images.length > 0 && currentIndex > -1 ? `${currentIndex + 1} / ${images.length} remaining` : '0 remaining'}
+            {images.length > 0 && currentIndex > -1 ? `${currentIndex + 1} / ${images.length} remaining` : '0 remaining'}
           </div>
         </div>
       </header>
@@ -144,25 +196,27 @@ export default function ApprovePhotosPage() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         ) : images.length > 0 ? (
           <>
-            <div className="relative w-full max-w-sm h-auto aspect-[3/4] rounded-2xl">
+            <div className="relative w-full max-w-md mx-auto" style={{ height: '70vh', minHeight: '500px', maxHeight: '700px' }}>
               {images.map((image, index) => (
                 <TinderCard
                   ref={childRefs[index]}
-                  className="absolute"
+                  className="absolute inset-0 w-full h-full"
                   key={image.imageID}
                   onSwipe={(dir) => swiped(dir, image, index)}
                   onCardLeftScreen={() => outOfFrame(index)}
                   preventSwipe={['up', 'down']}
                 >
                   <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border bg-card">
-                     <Image
+                    <div className="relative w-full h-full p-4">
+                      <ImageWithFallback
                         src={image.imageURL}
-                        alt="A photo for approval"
+                        alt={`Photo for approval - ${image.imageID}`}
                         fill
                         className="object-contain"
                         sizes="(max-width: 640px) 100vw, 448px"
-                        priority
-                     />
+                        priority={index === currentIndex}
+                      />
+                    </div>
                   </div>
                 </TinderCard>
               ))}

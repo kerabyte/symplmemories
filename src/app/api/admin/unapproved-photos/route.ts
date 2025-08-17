@@ -33,13 +33,21 @@ export async function POST(request: Request) {
     }
 
     try {
+        console.log(`🔍 Fetching unapproved images from: ${backendUrl}/api/wedding/unprvdimgs`);
+
         const apiResponse = await fetch(`${backendUrl}/api/wedding/unprvdimgs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ wedId, wedauthkey: authKey }),
         });
 
+        console.log(`📡 Backend response status: ${apiResponse.status}`);
         const data = await apiResponse.json();
+        console.log(`📄 Backend response data:`, {
+            hasImages: !!data.images,
+            imageCount: data.images?.length || 0,
+            sampleImageURLs: data.images?.slice(0, 3).map((img: any) => img.imageURL) || []
+        });
 
         if (!apiResponse.ok) {
             return NextResponse.json({ issue: data.issue || data.message || 'Failed to fetch from backend' }, { status: apiResponse.status });
