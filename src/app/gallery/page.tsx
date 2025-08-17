@@ -44,7 +44,12 @@ async function getCategories(): Promise<Category[]> {
     return data.categories || [];
   } catch (error) {
     console.error('Error fetching categories:', error);
-    return [];
+    // If fetching fails, create categories from mock data to ensure the page still works
+    const mockCategories = [...new Set(allPhotos.map(p => p.category))];
+    return mockCategories.map((catName, index) => ({
+      catID: `mock-cat-${index}`,
+      catName: catName,
+    }));
   }
 }
 
@@ -62,28 +67,29 @@ export default async function GalleryPage() {
     return {
       name: cat.catName,
       photos: photosInCategory,
-      thumbnail: photosInCategory[0]?.url, // Use first photo as thumbnail
+      // Use placeholder for thumbnail as requested
+      thumbnail: `https://placehold.co/600x400.png`,
     };
   });
 
-  // Filter out categories that might exist in the backend but have no corresponding photos in the mock data
-  const categoriesWithPhotos = categoryData.filter(c => c.photos.length > 0);
+  // Since we want to display all categories from the backend, even if they have no mock photos,
+  // we will pass categoryData directly. We can handle the "0 photos" case in the UI.
   
-  // If after fetching categories, none of them match the mock data,
-  // we can create categories from the mock data itself.
-  if (categoriesWithPhotos.length === 0 && allPhotos.length > 0) {
+  // However, if the backend returns no categories but we have mock photos,
+  // let's create categories from the mock data to show something.
+  if (categoryData.length === 0 && allPhotos.length > 0) {
       const mockCategoryNames = [...new Set(allPhotos.map(p => p.category))];
       const mockCategoryData = mockCategoryNames.map(name => {
           const photosInCategory = allPhotos.filter(p => p.category === name);
           return {
               name,
               photos: photosInCategory,
-              thumbnail: photosInCategory[0]?.url
+              thumbnail: photosInCategory[0]?.url || `https://placehold.co/6000x4000.png`
           }
       })
       return <GalleryPageClient initialCategories={mockCategoryData} allPhotos={formattedPhotos} />;
   }
 
 
-  return <GalleryPageClient initialCategories={categoriesWithPhotos} allPhotos={formattedPhotos} />;
+  return <GalleryPageClient initialCategories={categoryData} allPhotos={formattedPhotos} />;
 }
