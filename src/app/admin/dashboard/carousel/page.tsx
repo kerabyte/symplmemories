@@ -138,7 +138,7 @@ export default function ManageCarouselPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="py-4 px-4 md:px-8 sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -190,7 +190,7 @@ export default function ManageCarouselPage() {
         </div>
       </header>
 
-      <main className="container mx-auto p-4 md:p-8 flex-1 flex flex-col justify-center">
+      <main className="flex-1 flex flex-col items-center justify-center p-4">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -198,23 +198,23 @@ export default function ManageCarouselPage() {
         ) : images.length > 0 ? (
           <Carousel
             opts={{
-              align: "start",
+              align: "center",
               loop: true,
             }}
-            className="w-full"
+            className="w-full h-full"
           >
-            <CarouselContent>
+            <CarouselContent className="h-full">
               {images.filter(image => image.imageURLs).map((image) => (
-                <CarouselItem key={image.id} className="md:basis-1/2 lg:basis-1/3 xl:basis-1/4 flex justify-center">
-                  <div className="p-1 w-[280px]">
-                    <Card className="group relative overflow-hidden aspect-[9/16] w-full">
+                <CarouselItem key={image.id} className="h-full">
+                  <div className="w-full h-full p-1">
+                    <Card className="group relative overflow-hidden h-full w-full">
                       <CardContent className="p-0 h-full">
                         <Image
                           src={image.imageURLs}
                           alt="Carousel Image"
                           fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-contain"
+                          sizes="100vw"
                         />
                       </CardContent>
                       <div className="absolute top-2 right-2">
@@ -250,8 +250,8 @@ export default function ManageCarouselPage() {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <CarouselPrevious className="absolute left-4 text-white bg-black/30 hover:bg-black/50 border-white/50 hover:text-white" />
+            <CarouselNext className="absolute right-4 text-white bg-black/30 hover:bg-black/50 border-white/50 hover:text-white" />
           </Carousel>
         ) : (
           <div className="text-center py-16">
