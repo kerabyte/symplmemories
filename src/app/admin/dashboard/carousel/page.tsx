@@ -43,8 +43,109 @@ import { cn } from '@/lib/utils';
 
 interface CarouselImage {
   id: string;
-  imageURLs: string;
+  imageURLs?: string;
+  imageURL?: string;  // Alternative field name
+  url?: string;       // Another alternative field name
+  [key: string]: any; // Allow other fields from backend
 }
+
+// Smart image component that handles optimization timeouts for large images
+const OptimizedImage = ({ src, alt, className, ...props }: any) => {
+  const [useOptimized, setUseOptimized] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [hasError, setHasError] = React.useState(false);
+
+  React.useEffect(() => {
+    console.log('🎯 OptimizedImage received src:', src);
+    // Reset states when src changes
+    setIsLoading(true);
+    setHasError(false);
+    setUseOptimized(true);
+
+    // Check if src is valid
+    if (!src) {
+      console.warn('❌ No src provided to OptimizedImage');
+      setIsLoading(false);
+      setHasError(true);
+      return;
+    }
+
+    // Set a timeout to fallback if Next.js optimization takes too long
+    const timeoutId = setTimeout(() => {
+      console.warn('⏰ Next.js optimization timeout, switching to direct rendering for:', src);
+      setUseOptimized(false);
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(timeoutId);
+  }, [src]); // CRITICAL FIX: Only depend on src to prevent infinite re-renders
+
+  const handleOptimizedError = () => {
+    console.warn(`🚨 Next.js optimization failed for: ${src}, switching to direct rendering`);
+    setUseOptimized(false);
+    setIsLoading(true); // Reset loading for fallback
+    setHasError(false);
+  };
+
+  const handleLoad = () => {
+    console.log(`✅ Image loaded successfully: ${src}`);
+    setIsLoading(false);
+    setHasError(false);
+  };
+
+  const handleDirectError = () => {
+    console.error(`❌ Direct image loading failed: ${src}`);
+    setIsLoading(false);
+    setHasError(true);
+  };
+
+  if (!useOptimized) {
+    // Fallback to direct image rendering without Next.js optimization
+    return (
+      <div className="relative w-full h-full">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        )}
+        <img
+          src={src}
+          alt={alt}
+          className={`w-full h-full ${className || ''} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+          onLoad={handleLoad}
+          onError={handleDirectError}
+        />
+        {hasError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground z-10">
+            <div className="text-center">
+              <div className="text-2xl mb-2">🖼️</div>
+              <div className="text-sm">Failed to load image</div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      )}
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className={`${className || ''} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+        onError={handleOptimizedError}
+        onLoad={handleLoad}
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        {...props}
+      />
+    </div>
+  );
+};
 
 export default function ManageCarouselPage() {
   const router = useRouter();
@@ -70,8 +171,20 @@ export default function ManageCarouselPage() {
     try {
       const response = await fetch('/api/admin/carousel/list', { method: 'POST' });
       const data = await response.json();
+      console.log('🔍 Raw API Response:', data);
+
       if (response.ok) {
-        setImages(data.carouselImages || []);
+        // Try different possible field names from backend response
+        const imageList = data.carouselImages || data.images || data.data || [];
+        console.log('🖼️ Fetched carousel images:', {
+          rawData: data,
+          count: imageList.length,
+          sampleImages: imageList.slice(0, 3),
+          sampleURLs: imageList.slice(0, 3).map((img: any) => img.imageURLs || img.imageURL || img.url),
+          validImages: imageList.filter((img: any) => img.imageURLs || img.imageURL || img.url).length,
+          fieldNames: imageList.length > 0 ? Object.keys(imageList[0]) : []
+        });
+        setImages(imageList);
       } else {
         throw new Error(data.issue || 'Failed to fetch images');
       }
@@ -92,6 +205,19 @@ export default function ManageCarouselPage() {
   }, [fetchImages]);
 
   const processFile = (file: File) => {
+    // Check file size (5MB limit)
+    const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSizeInBytes) {
+      toast({
+        variant: 'destructive',
+        title: 'File Too Large',
+        description: `Image file size (${(file.size / 1024 / 1024).toFixed(1)}MB) exceeds the 5MB limit. Please choose a smaller image or compress it first.`,
+      });
+      return;
+    }
+
+    console.log(`📁 Processing file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+
     setFileName(file.name);
     const reader = new FileReader();
     reader.addEventListener('load', () => {
@@ -435,47 +561,59 @@ export default function ManageCarouselPage() {
             className="w-full h-full"
           >
             <CarouselContent className="h-full">
-              {images.filter(image => image.imageURLs).map((image) => (
-                <CarouselItem key={image.id} className="h-full group">
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={image.imageURLs}
-                      alt="Carousel Image"
-                      fill
-                      className="object-cover"
-                      sizes="100vw"
-                    />
-                    <div className="absolute top-4 right-4 z-20">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            disabled={isDeleting === image.id}
-                          >
-                            {isDeleting === image.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete the image from the server and the carousel.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteImage(image)}>
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+              {images.filter(image => {
+                const imageUrl = image.imageURLs || image.imageURL || image.url;
+                console.log('🔗 Filtering image:', { id: image.id, imageUrl, fullImage: image });
+                return imageUrl;
+              }).map((image) => {
+                const imageUrl = image.imageURLs || image.imageURL || image.url;
+                console.log('🖼️ Rendering image:', { id: image.id, imageUrl });
+                return (
+                  <CarouselItem key={image.id} className="h-full group">
+                    <div className="relative w-full h-full">
+                      {/* Temporarily bypass OptimizedImage for debugging */}
+                      <img
+                        src={imageUrl}
+                        alt="Carousel Image"
+                        className="w-full h-full object-cover"
+                        onLoad={() => console.log('✅ Direct image loaded:', imageUrl)}
+                        onError={(e) => {
+                          console.error('❌ Direct image failed:', imageUrl, e);
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute top-4 right-4 z-20">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                              disabled={isDeleting === image.id}
+                            >
+                              {isDeleting === image.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the image from the server and the carousel.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteImage(image)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
-                  </div>
-                </CarouselItem>
-              ))}
+                  </CarouselItem>
+                );
+              })}
             </CarouselContent>
             <CarouselPrevious className="absolute left-4 text-white bg-black/30 hover:bg-black/50 border-white/50 hover:text-white" />
             <CarouselNext className="absolute right-4 text-white bg-black/30 hover:bg-black/50 border-white/50 hover:text-white" />
