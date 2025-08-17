@@ -34,6 +34,7 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenuItem } from './ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from './ui/select';
+import { cn } from '@/lib/utils';
 
 interface Category {
     catID: string;
@@ -252,7 +253,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
                       <SelectItem key={cat.catID} value={cat.catID}>{cat.catName}</SelectItem>
                     ))}
                     {categories.length > 0 && <SelectSeparator />}
-                    <SelectItem value={CREATE_NEW_CATEGORY_VALUE} className="text-primary hover:text-primary focus:text-primary">
+                    <SelectItem value={CREATE_NEW_CATEGORY_VALUE} className="text-primary-foreground">
                         <div className="flex items-center gap-2">
                             <PlusCircle className="h-4 w-4" />
                             Create new category...
