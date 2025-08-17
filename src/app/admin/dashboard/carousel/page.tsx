@@ -349,36 +349,36 @@ export default function ManageCarouselPage() {
               <DialogHeader>
                 <DialogTitle>Upload New Carousel Image</DialogTitle>
                 <DialogDescription>
-                  Select an image file from your computer to upload.
+                  Select an image file from your device to upload.
                 </DialogDescription>
               </DialogHeader>
-               <div className="py-4">
-                 <Label
-                   htmlFor="image-upload-input"
-                   className={cn(
-                     "flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors",
-                     { "border-primary bg-primary/10": isDragging }
-                   )}
-                   onDragOver={handleDragOver}
-                   onDragLeave={handleDragLeave}
-                   onDrop={handleDrop}
-                 >
-                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                     <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
-                     <p className="mb-2 text-sm text-muted-foreground">
-                       <span className="font-semibold">Click to upload</span> or drag and drop
-                     </p>
-                     <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP</p>
-                   </div>
-                   <Input
-                     id="image-upload-input"
-                     type="file"
-                     accept="image/*"
-                     className="hidden"
-                     onChange={onSelectFile}
-                   />
-                 </Label>
-               </div>
+              <div className="py-4">
+                <Label
+                  htmlFor="image-upload-input"
+                  className={cn(
+                    "flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors",
+                    { "border-primary bg-primary/10": isDragging }
+                  )}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
+                    <p className="mb-2 text-sm text-muted-foreground">
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP</p>
+                  </div>
+                  <Input
+                    id="image-upload-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={onSelectFile}
+                  />
+                </Label>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
