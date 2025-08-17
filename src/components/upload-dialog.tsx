@@ -27,7 +27,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Loader2, Sparkles, PlusCircle } from 'lucide-react';
+import { Camera, Loader2, Sparkles, PlusCircle, UploadCloud } from 'lucide-react';
 import type { Photo } from '@/lib/types';
 import { generatePhotoCaption } from '@/ai/flows/generate-photo-caption';
 import Image from 'next/image';
@@ -65,6 +65,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
   const [newCategoryName, setNewCategoryName] = React.useState('');
   const [isCreatingCategory, setIsCreatingCategory] = React.useState(false);
   const [showNewCategoryDialog, setShowNewCategoryDialog] = React.useState(false);
+  const [isDragging, setIsDragging] = React.useState(false);
   
   const { toast } = useToast();
 
@@ -97,17 +98,42 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
   }, [open, fetchCategories]);
 
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
+  const processFile = (file: File) => {
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
         setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFile(e.target.files[0]);
     }
   };
+
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
 
   const handleGenerateCaption = async () => {
     if (!photoPreview) {
@@ -231,7 +257,27 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="photo">Photo</Label>
-                <Input id="photo" type="file" accept="image/*" onChange={handleFileChange} required />
+                {!photoPreview && (
+                  <Label
+                    htmlFor="photo-upload-input"
+                    className={cn(
+                      "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors",
+                      { "border-primary bg-primary/10": isDragging }
+                    )}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                      <p className="mb-1 text-sm text-muted-foreground">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP</p>
+                    </div>
+                    <Input id="photo-upload-input" type="file" accept="image/*" className="hidden" onChange={onSelectFile} required />
+                  </Label>
+                )}
               </div>
               {photoPreview && (
                  <div className="relative w-full aspect-video rounded-md overflow-hidden border">
@@ -253,7 +299,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
                       <SelectItem key={cat.catID} value={cat.catID}>{cat.catName}</SelectItem>
                     ))}
                     {categories.length > 0 && <SelectSeparator />}
-                    <SelectItem value={CREATE_NEW_CATEGORY_VALUE} className="text-primary-foreground">
+                    <SelectItem value={CREATE_NEW_CATEGORY_VALUE} className="text-primary-foreground hover:text-primary-foreground focus:text-primary-foreground">
                         <div className="flex items-center gap-2">
                             <PlusCircle className="h-4 w-4" />
                             Create new category...
