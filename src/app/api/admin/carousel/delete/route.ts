@@ -6,26 +6,26 @@ import { jwtVerify } from 'jose';
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'default-secret-key-that-is-long-enough');
 
 async function verifyJWT(token: string) {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload;
-  } catch (error) {
-    return null;
-  }
+    try {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        return payload;
+    } catch (error) {
+        return null;
+    }
 }
 
 export async function POST(request: Request) {
-    const session = cookies().get('admin_session')?.value;
+    const session = (await cookies()).get('admin_session')?.value;
     if (!session) {
         return NextResponse.json({ issue: 'Unauthorized' }, { status: 401 });
     }
-     const decoded = await verifyJWT(session);
+    const decoded = await verifyJWT(session);
     if (!decoded) {
         return NextResponse.json({ issue: 'Unauthorized: Invalid token' }, { status: 401 });
     }
-    
+
     const { carouselID } = await request.json();
-    
+
     if (!carouselID) {
         return NextResponse.json({ issue: 'Carousel ID is required.' }, { status: 400 });
     }

@@ -15,12 +15,12 @@ const s3Client = new S3Client({
 });
 
 async function verifyJWT(token: string) {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload;
-  } catch (error) {
-    return null;
-  }
+    try {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        return payload;
+    } catch (error) {
+        return null;
+    }
 }
 
 function getKeyFromUrl(fileUrl: string) {
@@ -35,7 +35,7 @@ function getKeyFromUrl(fileUrl: string) {
 }
 
 export async function POST(request: Request) {
-    const session = cookies().get('admin_session')?.value;
+    const session = (await cookies()).get('admin_session')?.value;
     if (!session) {
         return NextResponse.json({ issue: 'Unauthorized' }, { status: 401 });
     }
@@ -46,13 +46,13 @@ export async function POST(request: Request) {
 
     try {
         const { fileUrl } = await request.json();
-        
+
         if (!fileUrl) {
             return NextResponse.json({ issue: 'File URL is required.' }, { status: 400 });
         }
 
         const key = getKeyFromUrl(fileUrl);
-        if(!key) {
+        if (!key) {
             return NextResponse.json({ issue: 'Could not determine file key from URL.' }, { status: 400 });
         }
 

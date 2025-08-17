@@ -52,7 +52,7 @@ export default function ManageCarouselPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isAdding, setIsAdding] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
-  
+
   // States for Add/Crop dialog
   const [addDialogOpen, setAddDialogOpen] = React.useState(false);
   const [cropDialogOpen, setCropDialogOpen] = React.useState(false);
@@ -106,27 +106,86 @@ export default function ManageCarouselPage() {
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
-    canvas.width = crop.width;
-    canvas.height = crop.height;
+
+    // CRITICAL: Use the ACTUAL pixel dimensions from the original image, not the crop UI dimensions
+    // This maintains the original image resolution and prevents quality loss
+    let sourceWidth = crop.width * scaleX;
+    let sourceHeight = crop.height * scaleY;
+
+    // Smart resolution limiting for optimal web performance
+    // Increase to 4096px for higher quality (was 2048px)
+    const MAX_DIMENSION = 4096;
+    const maxDimension = Math.max(sourceWidth, sourceHeight);
+    const originalWidth = sourceWidth;
+    const originalHeight = sourceHeight;
+
+    if (maxDimension > MAX_DIMENSION) {
+      const scaleFactor = MAX_DIMENSION / maxDimension;
+      sourceWidth = Math.round(sourceWidth * scaleFactor);
+      sourceHeight = Math.round(sourceHeight * scaleFactor);
+      console.log(`📐 Resolution Limited: ${originalWidth}x${originalHeight} → ${sourceWidth}x${sourceHeight}`);
+    } else {
+      console.log(`📐 Original Resolution Maintained: ${sourceWidth}x${sourceHeight}`);
+    }
+
+    canvas.width = sourceWidth;
+    canvas.height = sourceHeight;
+
     const ctx = canvas.getContext('2d');
 
     if (!ctx) {
       throw new Error('No 2d context');
     }
 
+    // Optimize canvas rendering for quality
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
     ctx.drawImage(
       image,
-      crop.x * scaleX,
-      crop.y * scaleY,
-      crop.width * scaleX,
-      crop.height * scaleY,
-      0,
-      0,
-      crop.width,
-      crop.height
+      crop.x * scaleX,     // Source X (in original image pixels)
+      crop.y * scaleY,     // Source Y (in original image pixels)
+      crop.width * scaleX, // Source width (in original image pixels)
+      crop.height * scaleY,// Source height (in original image pixels)
+      0,                   // Destination X
+      0,                   // Destination Y
+      sourceWidth,         // Destination width (scaled if needed)
+      sourceHeight         // Destination height (scaled if needed)
     );
 
-    return canvas.toDataURL('image/jpeg');
+    // Check WebP support by trying to create a small WebP data URL
+    const testWebP = () => {
+      try {
+        const testCanvas = document.createElement('canvas');
+        testCanvas.width = testCanvas.height = 1;
+        return testCanvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+      } catch {
+        return false;
+      }
+    };
+
+    if (testWebP()) {
+      // WebP lossless quality for maximum quality
+      const dataUrl = canvas.toDataURL('image/webp', 1.0);
+
+      // Debug information
+      const fileSizeKB = Math.round((dataUrl.length * 0.75) / 1024); // Approximate file size
+      console.log(`🎯 Image Processing Debug:
+        Original Image: ${image.naturalWidth}x${image.naturalHeight}
+        Crop Area: ${crop.width}x${crop.height} 
+        Canvas Size: ${canvas.width}x${canvas.height}
+        WebP Quality: 1.0 (lossless)
+        Estimated File Size: ${fileSizeKB}KB
+        Data URL Length: ${dataUrl.length} chars`);
+
+      return dataUrl;
+    } else {
+      // Fallback to high-quality PNG for browsers that don't support WebP (rare)
+      const dataUrl = canvas.toDataURL('image/png');
+      const fileSizeKB = Math.round((dataUrl.length * 0.75) / 1024);
+      console.log(`📷 PNG Fallback: ${canvas.width}x${canvas.height}, ~${fileSizeKB}KB`);
+      return dataUrl;
+    }
   };
 
   const handleAddImage = async () => {
@@ -163,13 +222,13 @@ export default function ManageCarouselPage() {
       if (!addDbResponse.ok || !addDbData.id) {
         // If this fails, try to delete the just-uploaded image from S3
         await fetch('/api/admin/upload/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileUrl: imageUrl }),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileUrl: imageUrl }),
         });
         throw new Error(addDbData.issue || 'Failed to save image to database.');
       }
-      
+
       toast({ title: 'Success', description: 'New image added successfully.' });
       resetCropDialog();
       fetchImages(); // Refresh the list
@@ -188,33 +247,33 @@ export default function ManageCarouselPage() {
   const handleDeleteImage = async (image: CarouselImage) => {
     setIsDeleting(image.id);
     try {
-        // 1. Delete from S3
-        const s3DeleteResponse = await fetch('/api/admin/upload/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileUrl: image.imageURLs }),
-        });
+      // 1. Delete from S3
+      const s3DeleteResponse = await fetch('/api/admin/upload/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileUrl: image.imageURLs }),
+      });
 
-        if (!s3DeleteResponse.ok) {
-             const errorData = await s3DeleteResponse.json();
-             // Non-fatal, maybe the file was already deleted. We can still proceed.
-             console.warn(`Could not delete file from S3: ${errorData.issue || 'Unknown error'}`);
-        }
+      if (!s3DeleteResponse.ok) {
+        const errorData = await s3DeleteResponse.json();
+        // Non-fatal, maybe the file was already deleted. We can still proceed.
+        console.warn(`Could not delete file from S3: ${errorData.issue || 'Unknown error'}`);
+      }
 
-        // 2. Delete from our database
-        const response = await fetch('/api/admin/carousel/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ carouselID: image.id }),
-        });
+      // 2. Delete from our database
+      const response = await fetch('/api/admin/carousel/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ carouselID: image.id }),
+      });
 
-        const data = await response.json();
-        if (response.ok && data.success) {
-            toast({ title: 'Success', description: 'Image deleted successfully.' });
-            fetchImages(); // Refresh the list
-        } else {
-            throw new Error(data.issue || data.message || 'Failed to delete image from database');
-        }
+      const data = await response.json();
+      if (response.ok && data.success) {
+        toast({ title: 'Success', description: 'Image deleted successfully.' });
+        fetchImages(); // Refresh the list
+      } else {
+        throw new Error(data.issue || data.message || 'Failed to delete image from database');
+      }
     } catch (error) {
       console.error('Error deleting image:', error);
       toast({
@@ -226,14 +285,14 @@ export default function ManageCarouselPage() {
       setIsDeleting(null);
     }
   };
-  
+
   const resetCropDialog = () => {
     setCropDialogOpen(false);
     setImgSrc('');
     setCrop(undefined);
     setCompletedCrop(undefined);
     setFileName('');
-    if(document.getElementById('image-upload-input')) {
+    if (document.getElementById('image-upload-input')) {
       (document.getElementById('image-upload-input') as HTMLInputElement).value = "";
     }
   }
@@ -280,8 +339,8 @@ export default function ManageCarouselPage() {
         </div>
       </header>
 
-       {/* Crop Dialog */}
-       <Dialog open={cropDialogOpen} onOpenChange={(isOpen) => !isOpen && resetCropDialog()}>
+      {/* Crop Dialog */}
+      <Dialog open={cropDialogOpen} onOpenChange={(isOpen) => !isOpen && resetCropDialog()}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Crop Image</DialogTitle>
@@ -308,7 +367,7 @@ export default function ManageCarouselPage() {
             )}
           </div>
           <DialogFooter>
-             <Button variant="outline" onClick={resetCropDialog}>Cancel</Button>
+            <Button variant="outline" onClick={resetCropDialog}>Cancel</Button>
             <Button onClick={handleAddImage} disabled={isAdding}>
               {isAdding ? <Loader2 className="mr-2 animate-spin" /> : null}
               Add Image
@@ -341,34 +400,34 @@ export default function ManageCarouselPage() {
                       className="object-cover"
                       sizes="100vw"
                     />
-                      <div className="absolute top-4 right-4 z-20">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                              disabled={isDeleting === image.id}
-                            >
-                              {isDeleting === image.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the image from the server and the carousel.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteImage(image)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                    <div className="absolute top-4 right-4 z-20">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            disabled={isDeleting === image.id}
+                          >
+                            {isDeleting === image.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the image from the server and the carousel.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteImage(image)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </CarouselItem>
               ))}
