@@ -51,7 +51,6 @@ const CREATE_NEW_CATEGORY_VALUE = 'create-new-category';
 
 export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProps) {
   const [open, setOpen] = React.useState(false);
-  const [author, setAuthor] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [categoryId, setCategoryId] = React.useState<string>('');
   const [categories, setCategories] = React.useState<Category[]>([]);
@@ -205,15 +204,14 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     const selectedCategory = categories.find(c => c.catID === categoryId);
-    if (photoPreview && author && selectedCategory) {
+    if (photoPreview && selectedCategory) {
       setIsUploading(true);
       // Simulate upload delay
       setTimeout(() => {
-        onPhotoAdd({ url: photoPreview, author, description, category: selectedCategory.catName, categoryId: selectedCategory.catID });
+        onPhotoAdd({ url: photoPreview, author: 'Guest', description, category: selectedCategory.catName, categoryId: selectedCategory.catID });
         setIsUploading(false);
         setOpen(false);
         // Reset form
-        setAuthor('');
         setDescription('');
         setCategoryId('');
         setPhotoFile(null);
@@ -223,7 +221,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
        toast({
         variant: "destructive",
         title: "Incomplete Form",
-        description: "Please provide a photo, your name, and a category.",
+        description: "Please provide a photo and select a category.",
       });
     }
   };
@@ -284,10 +282,6 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
                    <Image src={photoPreview} alt="Selected preview" fill className="object-contain" />
                  </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="author">Your Name</Label>
-                <Input id="author" value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="e.g., Jane Doe" required />
-              </div>
                <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
                 <Select value={categoryId} onValueChange={handleCategoryChange} required>
