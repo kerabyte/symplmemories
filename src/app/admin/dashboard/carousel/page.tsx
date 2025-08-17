@@ -118,11 +118,11 @@ export default function ManageCarouselPage() {
         body: JSON.stringify({ carouselID }),
       });
       const data = await response.json();
-      if (response.ok && data.status) {
+      if (response.ok && data.success) {
         toast({ title: 'Success', description: 'Image deleted successfully.' });
         fetchImages(); // Refresh the list
       } else {
-        throw new Error(data.issue || 'Failed to delete image');
+        throw new Error(data.issue || data.message || 'Failed to delete image');
       }
     } catch (error) {
       console.error('Error deleting image:', error);

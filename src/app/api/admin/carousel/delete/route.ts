@@ -48,7 +48,7 @@ export async function POST(request: Request) {
         const data = await apiResponse.json();
 
         if (!apiResponse.ok) {
-            return NextResponse.json({ issue: data.issue || 'Failed to delete from backend' }, { status: apiResponse.status });
+            return NextResponse.json({ issue: data.message || 'Failed to delete from backend' }, { status: apiResponse.status });
         }
 
         return NextResponse.json(data);
