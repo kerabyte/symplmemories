@@ -15,7 +15,7 @@ import Link from 'next/link';
 interface PhotoGalleryProps {
   initialPhotos: Photo[];
   categoryName: string;
-  onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes' | 'category'>) => void;
+  onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => void;
 }
 
 export function PhotoGallery({ initialPhotos, categoryName, onPhotoAdd }: PhotoGalleryProps) {

@@ -1,3 +1,4 @@
+
 export interface Comment {
   id: string;
   author: string;
@@ -18,7 +19,8 @@ export interface Photo {
   description: string;
   timestamp: string;
   author: string;
-  category: 'Ceremony' | 'Reception' | 'Couple Portraits' | 'Group Photos' | 'Details';
+  category: string;
+  categoryId: string;
   comments: Comment[];
   voiceNotes: VoiceNote[];
 }

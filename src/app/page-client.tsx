@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Camera, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import type { Photo } from '@/lib/types';
+import { useRouter } from 'next/navigation';
+
 
 interface HomePageClientProps {
   backgroundImages: { id: string; imageURLs: string; }[];
@@ -120,6 +122,7 @@ export default function HomePageClient({ backgroundImages }: HomePageClientProps
   const autoplay = React.useRef(
     Autoplay({ delay: 15000, stopOnInteraction: false })
   );
+  const router = useRouter();
 
   const [allPhotos, setAllPhotos] = React.useState<Photo[]>([]);
 
@@ -148,15 +151,8 @@ export default function HomePageClient({ backgroundImages }: HomePageClientProps
   }, [backgroundImages]);
 
   const addPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => {
-    const newPhoto: Photo = {
-      ...newPhotoData,
-      id: new Date().toISOString(),
-      timestamp: new Date().toISOString(),
-      comments: [],
-      voiceNotes: [],
-    };
-    console.log('New photo added:', newPhoto);
-    setAllPhotos(prevPhotos => [newPhoto, ...prevPhotos]);
+     // In a real app, this would re-validate data. Here we just navigate.
+    router.push(`/gallery/${encodeURIComponent(newPhotoData.category)}`);
   };
 
   return (

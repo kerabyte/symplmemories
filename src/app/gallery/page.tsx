@@ -15,7 +15,7 @@ import { Slideshow } from '@/components/slideshow';
 import { useRouter } from 'next/navigation';
 
 
-type Category = Photo['category'];
+type CategoryName = Photo['category'];
 
 export default function GalleryPage() {
   const [allPhotos, setAllPhotos] = React.useState<Photo[]>(photos);
@@ -32,11 +32,11 @@ export default function GalleryPage() {
     };
     setAllPhotos(prevPhotos => [newPhoto, ...prevPhotos]);
     // Navigate to the new photo's category page
-    router.push(`/gallery/${newPhotoData.category}`);
+    router.push(`/gallery/${encodeURIComponent(newPhotoData.category)}`);
   };
 
   const categories = React.useMemo(() => {
-    const categoryMap = new Map<Category, Photo[]>();
+    const categoryMap = new Map<CategoryName, Photo[]>();
     allPhotos.forEach(photo => {
       if (!categoryMap.has(photo.category)) {
         categoryMap.set(photo.category, []);
