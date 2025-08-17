@@ -4,10 +4,10 @@
 import * as React from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, ThumbsDown, ThumbsUp, XCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, ThumbsDown, ThumbsUp } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { Card } from '@/components/ui/card';
+import TinderCard from 'react-tinder-card';
 
 interface UnapprovedImage {
   imageID: string;
@@ -21,8 +21,19 @@ export default function ApprovePhotosPage() {
   const { toast } = useToast();
   const [images, setImages] = React.useState<UnapprovedImage[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [isProcessing, setIsProcessing] = React.useState(false);
   const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [lastDirection, setLastDirection] = React.useState<string | undefined>();
+
+  // used for outOfFrame closure
+  const currentIndexRef = React.useRef(currentIndex);
+
+  const childRefs = React.useMemo(
+    () =>
+      Array(images.length)
+        .fill(0)
+        .map(() => React.createRef<any>()),
+    [images.length]
+  );
 
   const fetchUnapprovedImages = React.useCallback(async () => {
     setIsLoading(true);
@@ -31,10 +42,11 @@ export default function ApprovePhotosPage() {
       const data = await response.json();
       if (response.ok) {
         const sortedImages = (data.images || []).sort(
-          (a: UnapprovedImage, b: UnapprovedImage) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          (a: UnapprovedImage, b: UnapprovedImage) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         setImages(sortedImages);
-        setCurrentIndex(0);
+        setCurrentIndex(sortedImages.length - 1);
+        currentIndexRef.current = sortedImages.length - 1;
       } else {
         throw new Error(data.issue || 'Failed to fetch images');
       }
@@ -54,10 +66,31 @@ export default function ApprovePhotosPage() {
     fetchUnapprovedImages();
   }, [fetchUnapprovedImages]);
 
-  const handleApproval = async (image: UnapprovedImage, approve: boolean) => {
-    if (isProcessing) return;
-    setIsProcessing(true);
+  const updateCurrentIndex = (val: number) => {
+    setCurrentIndex(val);
+    currentIndexRef.current = val;
+  };
 
+  const canSwipe = currentIndex >= 0;
+
+  const swiped = (direction: string, image: UnapprovedImage, index: number) => {
+    setLastDirection(direction);
+    const approve = direction === 'right';
+    handleApproval(image, approve);
+    updateCurrentIndex(index - 1);
+  };
+
+  const outOfFrame = (id: number) => {
+    // console.log(`${id} left the screen!`);
+  };
+
+  const swipe = async (dir: 'left' | 'right') => {
+    if (canSwipe && currentIndex < images.length) {
+      await childRefs[currentIndex].current.swipe(dir);
+    }
+  };
+
+  const handleApproval = async (image: UnapprovedImage, approve: boolean) => {
     try {
       const response = await fetch('/api/admin/approve-photo', {
         method: 'POST',
@@ -71,13 +104,6 @@ export default function ApprovePhotosPage() {
           title: 'Success',
           description: `Image ${data.action} successfully.`,
         });
-        // Move to the next image
-        if (currentIndex < images.length - 1) {
-          setCurrentIndex(currentIndex + 1);
-        } else {
-          // No more images, refresh the list which should show the empty state
-          fetchUnapprovedImages();
-        }
       } else {
         throw new Error(data.issue || 'Failed to process approval');
       }
@@ -88,12 +114,9 @@ export default function ApprovePhotosPage() {
         title: 'Error',
         description: (error as Error).message || 'Could not process the request.',
       });
-    } finally {
-        setIsProcessing(false);
+      // If API fails, you might want to add the image back to the stack
     }
   };
-
-  const currentImage = images[currentIndex];
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
@@ -111,7 +134,7 @@ export default function ApprovePhotosPage() {
             </h1>
           </div>
           <div className="text-sm text-muted-foreground">
-            {images.length > 0 && currentIndex < images.length ? `${currentIndex + 1} / ${images.length} remaining` : '0 remaining'}
+             {images.length > 0 && currentIndex > -1 ? `${currentIndex + 1} / ${images.length} remaining` : '0 remaining'}
           </div>
         </div>
       </header>
@@ -119,25 +142,50 @@ export default function ApprovePhotosPage() {
       <main className="flex-1 flex flex-col justify-center items-center p-4 relative min-h-0">
         {isLoading ? (
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        ) : currentImage ? (
+        ) : images.length > 0 ? (
           <>
-            <Card className="w-full max-w-sm h-auto aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl relative">
-              <Image
-                src={currentImage.imageURL}
-                alt="A photo for approval"
-                fill
-                className="object-contain"
-                sizes="(max-width: 640px) 100vw, 448px"
-                priority
-              />
-            </Card>
+            <div className="relative w-full max-w-sm h-auto aspect-[3/4] rounded-2xl">
+              {images.map((image, index) => (
+                <TinderCard
+                  ref={childRefs[index]}
+                  className="absolute"
+                  key={image.imageID}
+                  onSwipe={(dir) => swiped(dir, image, index)}
+                  onCardLeftScreen={() => outOfFrame(index)}
+                  preventSwipe={['up', 'down']}
+                >
+                  <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border bg-card">
+                     <Image
+                        src={image.imageURL}
+                        alt="A photo for approval"
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 640px) 100vw, 448px"
+                        priority
+                     />
+                  </div>
+                </TinderCard>
+              ))}
+            </div>
 
             <div className="flex gap-8 mt-8">
-              <Button variant="outline" size="icon" className="h-16 w-16 rounded-full border-4 border-destructive text-destructive hover:bg-destructive/10" onClick={() => handleApproval(currentImage, false)} disabled={isProcessing}>
-                {isProcessing ? <Loader2 className="h-8 w-8 animate-spin" /> : <XCircle className="h-8 w-8" />}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-16 w-16 rounded-full border-4 border-destructive text-destructive hover:bg-destructive/10"
+                onClick={() => swipe('left')}
+                disabled={!canSwipe}
+              >
+                <ThumbsDown className="h-8 w-8" />
               </Button>
-              <Button variant="outline" size="icon" className="h-16 w-16 rounded-full border-4 border-green-500 text-green-500 hover:bg-green-500/10" onClick={() => handleApproval(currentImage, true)} disabled={isProcessing}>
-                {isProcessing ? <Loader2 className="h-8 w-8 animate-spin" /> : <CheckCircle className="h-8 w-8" />}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-16 w-16 rounded-full border-4 border-green-500 text-green-500 hover:bg-green-500/10"
+                onClick={() => swipe('right')}
+                disabled={!canSwipe}
+              >
+                <ThumbsUp className="h-8 w-8" />
               </Button>
             </div>
           </>
