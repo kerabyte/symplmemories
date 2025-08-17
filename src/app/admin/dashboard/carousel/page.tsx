@@ -34,7 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 interface CarouselImage {
   id: string;
-  imgURL: string;
+  imageURLs: string;
 }
 
 export default function ManageCarouselPage() {
@@ -190,11 +190,11 @@ export default function ManageCarouselPage() {
           </div>
         ) : (
           <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {images.filter(image => image.imgURL).map((image) => (
+            {images.filter(image => image.imageURLs).map((image) => (
               <Card key={image.id} className="group relative overflow-hidden">
                 <CardContent className="p-0 aspect-video">
                   <Image
-                    src={image.imgURL}
+                    src={image.imageURLs}
                     alt="Carousel Image"
                     fill
                     className="object-cover"
