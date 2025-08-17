@@ -20,7 +20,6 @@ export interface Photo {
   timestamp: string;
   author: string;
   category: string;
-  categoryId: string;
   comments: Comment[];
   voiceNotes: VoiceNote[];
 }
