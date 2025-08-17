@@ -1,19 +1,11 @@
 
 import GalleryPageClient from './page-client';
 import type { Photo } from '@/lib/types';
+import { photos as allPhotos } from '@/lib/mock-data';
 
 interface Category {
   catID: string;
   catName: string;
-}
-
-interface FetchedPhoto {
-  imageID: string;
-  imageURL: string;
-  catID: string;
-  catName: string;
-  createdAt: string;
-  [key: string]: any;
 }
 
 async function getCategories(): Promise<Category[]> {
@@ -40,6 +32,15 @@ async function getCategories(): Promise<Category[]> {
     }
 
     const data = await res.json();
+    // Fallback to a default category if none are returned but photos exist
+    if ((!data.categories || data.categories.length === 0) && allPhotos.length > 0) {
+      // Create categories from mock data if backend returns none
+      const mockCategories = [...new Set(allPhotos.map(p => p.category))];
+      return mockCategories.map((catName, index) => ({
+        catID: `mock-cat-${index}`,
+        catName: catName,
+      }));
+    }
     return data.categories || [];
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -47,60 +48,15 @@ async function getCategories(): Promise<Category[]> {
   }
 }
 
-async function getAllPhotos(): Promise<FetchedPhoto[]> {
-  const wedId = process.env.WEDDING_ID;
-  const authKey = process.env.AUTH_KEY;
-  const backendUrl = process.env.API_BACKEND_URL;
-
-   if (!wedId || !authKey || !backendUrl) {
-    console.error('Server configuration error for getAllPhotos.');
-    return [];
-  }
-
-  try {
-    const res = await fetch(`${backendUrl}/api/wedding/lstallimgs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wedId, wedauthkey: authKey }),
-      next: { revalidate: 300, tags: ['photos'] } // Revalidate every 5 minutes
-    });
-
-    if (!res.ok) {
-       console.error('Failed to fetch photos:', res.status, await res.text());
-      return [];
-    }
-
-    const data = await res.json();
-    // The backend returns an object with a key like "Reception Photos"
-    // We need to flatten all arrays inside this object into one
-    const allPhotos = Object.values(data).flat() as FetchedPhoto[];
-    return allPhotos.filter(p => p.imageURL && p.imageID);
-
-  } catch (error) {
-    console.error('Error fetching photos:', error);
-    return [];
-  }
-}
-
 export default async function GalleryPage() {
-  const [categories, allPhotos] = await Promise.all([
-    getCategories(),
-    getAllPhotos()
-  ]);
+  const categories = await getCategories();
 
-  // Map fetched photos to our Photo type
-  const formattedPhotos: Photo[] = allPhotos.map(p => ({
-    id: p.imageID,
-    url: p.imageURL,
-    description: p.description || '', // Add fallback
-    author: p.uploadedBy || 'Guest', // Add fallback
-    timestamp: p.createdAt,
-    category: p.catName, // This is important
-    comments: [],
-    voiceNotes: [],
-  }));
+  // Use mock photos
+  const formattedPhotos: Photo[] = allPhotos;
 
   // Create category objects for the UI
+  // This will now correctly show categories from your backend,
+  // but will use the mock data to populate photo counts and thumbnails.
   const categoryData = categories.map(cat => {
     const photosInCategory = formattedPhotos.filter(p => p.category === cat.catName);
     return {
@@ -108,7 +64,26 @@ export default async function GalleryPage() {
       photos: photosInCategory,
       thumbnail: photosInCategory[0]?.url, // Use first photo as thumbnail
     };
-  }).filter(c => c.photos.length > 0); // Only show categories with photos
+  });
 
-  return <GalleryPageClient initialCategories={categoryData} allPhotos={formattedPhotos} />;
+  // Filter out categories that might exist in the backend but have no corresponding photos in the mock data
+  const categoriesWithPhotos = categoryData.filter(c => c.photos.length > 0);
+  
+  // If after fetching categories, none of them match the mock data,
+  // we can create categories from the mock data itself.
+  if (categoriesWithPhotos.length === 0 && allPhotos.length > 0) {
+      const mockCategoryNames = [...new Set(allPhotos.map(p => p.category))];
+      const mockCategoryData = mockCategoryNames.map(name => {
+          const photosInCategory = allPhotos.filter(p => p.category === name);
+          return {
+              name,
+              photos: photosInCategory,
+              thumbnail: photosInCategory[0]?.url
+          }
+      })
+      return <GalleryPageClient initialCategories={mockCategoryData} allPhotos={formattedPhotos} />;
+  }
+
+
+  return <GalleryPageClient initialCategories={categoriesWithPhotos} allPhotos={formattedPhotos} />;
 }

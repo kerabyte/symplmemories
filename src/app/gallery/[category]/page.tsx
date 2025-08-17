@@ -8,9 +8,9 @@ import type { Photo } from '@/lib/types';
 import { notFound, useRouter } from 'next/navigation';
 
 interface CategoryPageProps {
-  params: Promise<{
+  params: {
     category: string;
-  }>;
+  };
 }
 
 export default function CategoryPage({ params }: CategoryPageProps) {
@@ -18,8 +18,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   const [categoryName, setCategoryName] = React.useState('');
   const [photos, setPhotos] = React.useState<Photo[]>([]);
   
-  // Unwrap the params Promise using React.use()
-  const resolvedParams = React.use(params);
+  const resolvedParams = params;
 
   React.useEffect(() => {
     const decodedCategoryName = decodeURIComponent(resolvedParams.category);
