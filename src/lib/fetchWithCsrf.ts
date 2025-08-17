@@ -1,4 +1,6 @@
 
+import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from './csrf';
+
 function getCookie(name: string): string | null {
     if (typeof document === 'undefined') {
         return null;
@@ -19,13 +21,13 @@ function getCookie(name: string): string | null {
  * @returns A Promise that resolves to the Response.
  */
 export async function fetchWithCsrf(url: string, options: RequestInit = {}): Promise<Response> {
-    const csrfToken = getCookie('csrf_token');
+    const csrfToken = getCookie(CSRF_COOKIE_NAME);
 
     const headers = new Headers(options.headers);
 
     // Only add CSRF token for methods that typically modify state
     if (options.method && options.method.toUpperCase() !== 'GET' && csrfToken) {
-        headers.set('x-csrf-token', csrfToken);
+        headers.set(CSRF_HEADER_NAME, csrfToken);
     }
 
     const newOptions: RequestInit = {

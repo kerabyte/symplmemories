@@ -3,16 +3,14 @@ import { NextResponse } from 'next/server';
 import type {NextRequest} from 'next/server';
 import {jwtVerify} from 'jose';
 import { doubleCsrf } from 'csrf-csrf';
+import { CSRF_HEADER_NAME, CSRF_COOKIE_NAME } from './lib/csrf';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'default-secret-key-that-is-long-enough');
 const JWT_COOKIE_NAME = 'admin_session';
 
-const {
-  generateToken,
-  validateRequest,
-} = doubleCsrf({
+const csrf = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET || 'default-csrf-secret-that-is-long-enough', // A secret that is used to hash the token
-  cookieName: 'csrf_token', // The name of the cookie to be used, recommend using Host- prefix.
+  cookieName: CSRF_COOKIE_NAME,
   cookieOptions: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -20,7 +18,7 @@ const {
     sameSite: 'lax',
   },
   size: 64, // The size of the generated tokens in bits
-  headerName: "x-csrf-token",
+  headerName: CSRF_HEADER_NAME,
 });
 
 async function verifyJWT(token: string) {
@@ -68,28 +66,21 @@ export async function middleware(request: NextRequest) {
 
   // 2. Handle CSRF token generation and verification
   const response = NextResponse.next();
+  const csrfError = await csrf.validateRequest(request, {
+      response,
+  });
 
-  // Verify CSRF token for all state-changing API requests.
-  if (request.method === 'POST' && pathname.startsWith('/api/admin/')) {
-    try {
-      await validateRequest(request);
-    } catch(e) {
-        console.error(`[CSRF] Failed validation for ${request.method} ${pathname}`, e);
-        return new NextResponse(JSON.stringify({ error: "Invalid CSRF token. Please refresh the page and try again." }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' }
-        });
-    }
+  if (csrfError) {
+      console.error(`[CSRF] Failed validation for ${request.method} ${pathname}`, csrfError);
+      return new NextResponse(JSON.stringify({ error: "Invalid CSRF token. Please refresh the page and try again." }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
   }
-  
+
   // Generate and set the CSRF token on the response for the client to use.
   // This should happen on any response so the client always has a fresh token.
-  const csrfToken = generateToken();
-  response.cookies.set('csrf_token', csrfToken, {
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      sameSite: 'lax',
-  });
+  await csrf.generateToken({request, response});
 
   return response;
 }
