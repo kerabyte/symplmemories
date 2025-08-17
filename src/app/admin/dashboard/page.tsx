@@ -68,7 +68,9 @@ export default function AdminDashboardPage() {
                 <CardDescription>Select and reorder the images that appear on the main page background slideshow.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button disabled>Go to Carousel Settings</Button>
+                <Link href="/admin/dashboard/carousel" passHref>
+                  <Button>Go to Carousel Settings</Button>
+                </Link>
               </CardContent>
             </Card>
             <Card>

@@ -1,16 +1,30 @@
 
-import { NextResponse, type NextRequest } from 'next/server';
-import { jwtVerify } from 'jose';
-import { verifyCsrfToken, CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from './lib/csrf';
+import { NextResponse } from 'next/server';
+import type {NextRequest} from 'next/server';
+import {jwtVerify} from 'jose';
+import { CsrfError, doubleCsrf } from 'csrf-csrf';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'default-secret-key-that-is-long-enough');
 const JWT_COOKIE_NAME = 'admin_session';
 
-// API routes that do not require CSRF protection.
-// The login route is exempt because the CSRF token is not yet available.
-const PUBLIC_API_ROUTES: string[] = [
-  // No public admin routes, all require session and CSRF
-];
+const {
+  generateToken,
+  validateRequest,
+  // We need to provide the exact same options for all functions
+} = doubleCsrf({
+  getSecret: () => process.env.CSRF_SECRET || 'default-csrf-secret-that-is-long-enough', // A secret that is used to hash the token
+  cookieName: 'csrf_token', // The name of the cookie to be used, recommend using Host- prefix.
+  cookieOptions: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    sameSite: 'lax',
+  },
+  size: 64, // The size of the generated tokens in bits
+  // The name of the header to be used for the token, should be the same as the cookie name.
+  // This is the one that will be sent in the request header from the client.
+  headerName: "x-csrf-token",
+});
 
 async function verifyJWT(token: string) {
   try {
@@ -25,14 +39,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. JWT-based authentication for admin routes
-  // Protect all routes under /admin/ except the login page /admin itself
-  if (pathname.startsWith('/admin/') && pathname !== '/admin/dashboard') {
-      // This is a catch-all for any future /admin/sub-pages.
-      // Redirect them to the dashboard for now.
-      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-  }
-  
-  if (pathname.startsWith('/admin/dashboard') || pathname.startsWith('/api/admin/logout')) {
+  if (pathname.startsWith('/admin/dashboard')) {
     const sessionCookie = request.cookies.get(JWT_COOKIE_NAME);
 
     if (!sessionCookie) {
@@ -65,39 +72,27 @@ export async function middleware(request: NextRequest) {
   // 2. Handle CSRF token generation and verification
   const response = NextResponse.next();
 
-  // Set CSRF token cookie if it doesn't exist
-  if (!request.cookies.has(CSRF_COOKIE_NAME)) {
-    const token = crypto.randomUUID();
-    response.cookies.set({
-      name: CSRF_COOKIE_NAME,
-      value: token,
-      httpOnly: true,
+  // Verify CSRF token for all state-changing API requests.
+  if (request.method === 'POST' && pathname.startsWith('/api/admin/')) {
+    try {
+      await validateRequest(request);
+    } catch(e) {
+        console.error(`[CSRF] Failed validation for ${request.method} ${pathname}`, e);
+        return new NextResponse(JSON.stringify({ error: "Invalid CSRF token. Please refresh the page and try again." }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        });
+    }
+  }
+  
+  // Generate and set the CSRF token on the response for the client to use.
+  // This should happen on any response so the client always has a fresh token.
+  const csrfToken = generateToken();
+  response.cookies.set('csrf_token', csrfToken, {
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       sameSite: 'lax',
-    });
-    // The readable cookie for the client script
-    response.cookies.set({
-        name: 'X-CSRF-Token',
-        value: token,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        sameSite: 'lax',
-    });
-  }
-  
-  // Verify CSRF token for all state-changing API requests.
-  if (request.method === 'POST' && pathname.startsWith('/api/admin/')) {
-       // The login route is a special case. It's a POST request but happens before a session is established.
-      // It still needs CSRF protection.
-      if (!verifyCsrfToken(request)) {
-          console.error(`[CSRF] Failed validation for ${request.method} ${pathname}`);
-          return new NextResponse(JSON.stringify({ error: "Invalid CSRF token. Please refresh the page and try again." }), {
-            status: 403,
-            headers: { 'Content-Type': 'application/json' }
-          });
-      }
-  }
+  });
 
   return response;
 }
