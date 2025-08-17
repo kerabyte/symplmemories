@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const { imageURLs } = await request.json();
 
     if (!imageURLs || typeof imageURLs !== 'string') {
-        return NextResponse.json({ issue: 'Image URLs are required and must be a string.' }, { status: 400 });
+        return NextResponse.json({ issue: 'Image URL is required and must be a string.' }, { status: 400 });
     }
 
     const wedId = process.env.WEDDING_ID;
@@ -48,10 +48,10 @@ export async function POST(request: Request) {
         const data = await apiResponse.json();
 
         if (!apiResponse.ok) {
-            return NextResponse.json({ issue: data.issue || 'Failed to post to backend' }, { status: apiResponse.status });
+            return NextResponse.json({ issue: data.message || 'Failed to post to backend' }, { status: apiResponse.status });
         }
 
-        return NextResponse.json(data);
+        return NextResponse.json(data, { status: 201 });
 
     } catch (error) {
         console.error('Add carousel proxy error:', error);

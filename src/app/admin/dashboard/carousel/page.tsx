@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, Plus, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Carousel,
   CarouselContent,
@@ -37,7 +36,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
 interface CarouselImage {
   id: string;
@@ -52,7 +51,7 @@ export default function ManageCarouselPage() {
   const [isAdding, setIsAdding] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
   const [addDialogOpen, setAddDialogOpen] = React.useState(false);
-  const [newImageUrls, setNewImageUrls] = React.useState('');
+  const [newImageUrl, setNewImageUrl] = React.useState('');
 
   const fetchImages = React.useCallback(async () => {
     setIsLoading(true);
@@ -80,30 +79,30 @@ export default function ManageCarouselPage() {
     fetchImages();
   }, [fetchImages]);
 
-  const handleAddImages = async (e: React.FormEvent) => {
+  const handleAddImage = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAdding(true);
     try {
       const response = await fetch('/api/admin/carousel/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageURLs: newImageUrls }),
+        body: JSON.stringify({ imageURLs: newImageUrl }),
       });
       const data = await response.json();
-      if (response.ok && data.status) {
-        toast({ title: 'Success', description: 'New images added successfully.' });
-        setNewImageUrls('');
+      if (response.ok && data.id) {
+        toast({ title: 'Success', description: 'New image added successfully.' });
+        setNewImageUrl('');
         setAddDialogOpen(false);
         fetchImages(); // Refresh the list
       } else {
-        throw new Error(data.issue || 'Failed to add images');
+        throw new Error(data.issue || data.message || 'Failed to add image');
       }
     } catch (error) {
-      console.error('Error adding images:', error);
+      console.error('Error adding image:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: (error as Error).message || 'Could not add new images.',
+        description: (error as Error).message || 'Could not add the new image.',
       });
     } finally {
       setIsAdding(false);
@@ -155,25 +154,25 @@ export default function ManageCarouselPage() {
           <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="mr-2" /> Add Images
+                <Plus className="mr-2" /> Add Image
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <form onSubmit={handleAddImages}>
+              <form onSubmit={handleAddImage}>
                 <DialogHeader>
-                  <DialogTitle>Add New Carousel Images</DialogTitle>
+                  <DialogTitle>Add New Carousel Image</DialogTitle>
                   <DialogDescription>
-                    Enter one or more image URLs, separated by commas.
+                    Enter the URL for the new image you want to add to the carousel.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
-                  <Label htmlFor="image-urls" className="sr-only">Image URLs</Label>
-                  <Textarea
-                    id="image-urls"
-                    value={newImageUrls}
-                    onChange={(e) => setNewImageUrls(e.target.value)}
-                    placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                    rows={5}
+                  <Label htmlFor="image-url">Image URL</Label>
+                  <Input
+                    id="image-url"
+                    type="url"
+                    value={newImageUrl}
+                    onChange={(e) => setNewImageUrl(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
                     required
                     disabled={isAdding}
                   />
@@ -181,7 +180,7 @@ export default function ManageCarouselPage() {
                 <DialogFooter>
                   <Button type="submit" disabled={isAdding}>
                     {isAdding ? <Loader2 className="mr-2 animate-spin" /> : null}
-                    Add Images
+                    Add Image
                   </Button>
                 </DialogFooter>
               </form>
