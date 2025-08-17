@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
     ],
     // Increase timeout for large image processing
     dangerouslyAllowSVG: false,
-    // Set maximum file size for optimization (5MB)
+    // Set maximum file size for optimization (20MB)
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     // Disable optimization for very large images to prevent timeouts

@@ -319,7 +319,7 @@ export default function ManageCarouselPage() {
 
     if (testWebP()) {
       // WebP lossless quality for maximum quality
-      const dataUrl = canvas.toDataURL('image/webp', 1.0);
+      const dataUrl = canvas.toDataURL('image/webp', 0.90);
 
       // Debug information
       const fileSizeKB = Math.round((dataUrl.length * 0.75) / 1024); // Approximate file size

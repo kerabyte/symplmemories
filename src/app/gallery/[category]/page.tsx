@@ -8,18 +8,21 @@ import type { Photo } from '@/lib/types';
 import { notFound, useRouter } from 'next/navigation';
 
 interface CategoryPageProps {
-  params: {
+  params: Promise<{
     category: string;
-  };
+  }>;
 }
 
 export default function CategoryPage({ params }: CategoryPageProps) {
   const router = useRouter();
   const [categoryName, setCategoryName] = React.useState('');
   const [photos, setPhotos] = React.useState<Photo[]>([]);
+  
+  // Unwrap the params Promise using React.use()
+  const resolvedParams = React.use(params);
 
   React.useEffect(() => {
-    const decodedCategoryName = decodeURIComponent(params.category);
+    const decodedCategoryName = decodeURIComponent(resolvedParams.category);
     
     const categoryExists = allPhotos.some(p => p.category === decodedCategoryName);
     const filteredPhotos = allPhotos.filter(p => p.category === decodedCategoryName);
@@ -35,7 +38,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
     setCategoryName(decodedCategoryName);
     setPhotos(filteredPhotos);
-  }, [params]);
+  }, [resolvedParams.category]);
 
 
   const handleAddPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => {
