@@ -138,8 +138,8 @@ export default function ManageCarouselPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="py-4 px-4 md:px-8 sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
+    <div className="h-screen bg-background text-foreground flex flex-col">
+      <header className="py-4 px-4 md:px-8 sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b flex-shrink-0">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Link href="/admin/dashboard" passHref>
@@ -190,9 +190,9 @@ export default function ManageCarouselPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 min-h-0">
         {isLoading ? (
-          <div className="flex-1 flex justify-center items-center">
+          <div className="h-full flex justify-center items-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : images.length > 0 ? (
@@ -201,23 +201,20 @@ export default function ManageCarouselPage() {
               align: "center",
               loop: true,
             }}
-            className="w-full h-full flex-1"
+            className="w-full h-full"
           >
             <CarouselContent className="h-full">
               {images.filter(image => image.imageURLs).map((image) => (
-                <CarouselItem key={image.id} className="h-full">
-                  <div className="w-full h-full p-0">
-                    <Card className="group relative overflow-hidden h-full w-full rounded-none border-0">
-                      <CardContent className="p-0 h-full">
-                        <Image
-                          src={image.imageURLs}
-                          alt="Carousel Image"
-                          fill
-                          className="object-cover"
-                          sizes="100vw"
-                        />
-                      </CardContent>
-                      <div className="absolute top-2 right-2">
+                <CarouselItem key={image.id} className="h-full group">
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={image.imageURLs}
+                      alt="Carousel Image"
+                      fill
+                      className="object-cover"
+                      sizes="100vw"
+                    />
+                      <div className="absolute top-4 right-4 z-20">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
@@ -245,7 +242,6 @@ export default function ManageCarouselPage() {
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
-                    </Card>
                   </div>
                 </CarouselItem>
               ))}
@@ -254,7 +250,7 @@ export default function ManageCarouselPage() {
             <CarouselNext className="absolute right-4 text-white bg-black/30 hover:bg-black/50 border-white/50 hover:text-white" />
           </Carousel>
         ) : (
-          <div className="flex-1 flex flex-col justify-center items-center text-center py-16">
+          <div className="h-full flex flex-col justify-center items-center text-center">
             <p className="text-muted-foreground">No carousel images found. Add some to get started.</p>
           </div>
         )}
