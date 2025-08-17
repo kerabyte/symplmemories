@@ -51,7 +51,6 @@ const CREATE_NEW_CATEGORY_VALUE = 'create-new-category';
 
 export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProps) {
   const [open, setOpen] = React.useState(false);
-  const [description, setDescription] = React.useState('');
   const [categoryId, setCategoryId] = React.useState<string>('');
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [isFetchingCategories, setIsFetchingCategories] = React.useState(false);
@@ -59,7 +58,6 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
   const [photoFile, setPhotoFile] = React.useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
-  const [isGenerating, setIsGenerating] = React.useState(false);
   
   const [newCategoryName, setNewCategoryName] = React.useState('');
   const [isCreatingCategory, setIsCreatingCategory] = React.useState(false);
@@ -133,37 +131,6 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
     }
   };
 
-
-  const handleGenerateCaption = async () => {
-    if (!photoPreview) {
-      toast({
-        variant: "destructive",
-        title: "No Photo Selected",
-        description: "Please select a photo before generating a caption.",
-      });
-      return;
-    }
-    setIsGenerating(true);
-    try {
-      const result = await generatePhotoCaption({
-        photoDataUri: photoPreview,
-        description: description || 'A wedding photo.',
-      });
-      if (result.caption) {
-        setDescription(result.caption);
-      }
-    } catch (error) {
-      console.error('Error generating caption:', error);
-       toast({
-        variant: "destructive",
-        title: "Caption Generation Failed",
-        description: "Could not generate a caption. Please try again.",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
         toast({ variant: 'destructive', title: 'Error', description: 'Category name cannot be empty.'});
@@ -208,11 +175,10 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
       setIsUploading(true);
       // Simulate upload delay
       setTimeout(() => {
-        onPhotoAdd({ url: photoPreview, author: 'Guest', description, category: selectedCategory.catName, categoryId: selectedCategory.catID });
+        onPhotoAdd({ url: photoPreview, author: 'Guest', description: '', category: selectedCategory.catName, categoryId: selectedCategory.catID });
         setIsUploading(false);
         setOpen(false);
         // Reset form
-        setDescription('');
         setCategoryId('');
         setPhotoFile(null);
         setPhotoPreview(null);
@@ -301,16 +267,6 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
                     </SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                      <Label htmlFor="description">Description / Caption</Label>
-                      <Button type="button" variant="ghost" size="sm" onClick={handleGenerateCaption} disabled={isGenerating || !photoPreview}>
-                          {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                          Smart Caption
-                      </Button>
-                  </div>
-                <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A lovely moment..." />
               </div>
             </div>
             <DialogFooter>
