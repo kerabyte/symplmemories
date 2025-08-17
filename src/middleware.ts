@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import type {NextRequest} from 'next/server';
 import {jwtVerify} from 'jose';
-import { CsrfError, doubleCsrf } from 'csrf-csrf';
+import { doubleCsrf } from 'csrf-csrf';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'default-secret-key-that-is-long-enough');
 const JWT_COOKIE_NAME = 'admin_session';
@@ -10,7 +10,6 @@ const JWT_COOKIE_NAME = 'admin_session';
 const {
   generateToken,
   validateRequest,
-  // We need to provide the exact same options for all functions
 } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET || 'default-csrf-secret-that-is-long-enough', // A secret that is used to hash the token
   cookieName: 'csrf_token', // The name of the cookie to be used, recommend using Host- prefix.
@@ -21,8 +20,6 @@ const {
     sameSite: 'lax',
   },
   size: 64, // The size of the generated tokens in bits
-  // The name of the header to be used for the token, should be the same as the cookie name.
-  // This is the one that will be sent in the request header from the client.
   headerName: "x-csrf-token",
 });
 
