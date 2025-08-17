@@ -32,8 +32,7 @@ const nextConfig: NextConfig = {
     ],
   },
    serverActions: {
-    bodySizeLimit: '4mb', // Increased for base64 image uploads
-    serverActions: true,
+    bodySizeLimit: '50mb', // Increased for base64 image uploads
   },
 };
 
