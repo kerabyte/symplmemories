@@ -6,7 +6,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, Trash2, UploadCloud } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -39,6 +39,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import ReactCrop, { type Crop } from 'react-image-crop';
+import { cn } from '@/lib/utils';
 
 interface CarouselImage {
   id: string;
@@ -61,6 +62,8 @@ export default function ManageCarouselPage() {
   const [completedCrop, setCompletedCrop] = React.useState<Crop>();
   const imgRef = React.useRef<HTMLImageElement>(null);
   const [fileName, setFileName] = React.useState('');
+  const [isDragging, setIsDragging] = React.useState(false);
+
 
   const fetchImages = React.useCallback(async () => {
     setIsLoading(true);
@@ -88,17 +91,41 @@ export default function ManageCarouselPage() {
     fetchImages();
   }, [fetchImages]);
 
+  const processFile = (file: File) => {
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setImgSrc(reader.result?.toString() || '');
+      setAddDialogOpen(false); // Close first dialog
+      setCropDialogOpen(true); // Open crop dialog
+    });
+    reader.readAsDataURL(file);
+  }
+
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setFileName(file.name);
-      const reader = new FileReader();
-      reader.addEventListener('load', () => {
-        setImgSrc(reader.result?.toString() || '');
-        setAddDialogOpen(false); // Close first dialog
-        setCropDialogOpen(true); // Open crop dialog
-      });
-      reader.readAsDataURL(file);
+      processFile(e.target.files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -325,15 +352,33 @@ export default function ManageCarouselPage() {
                   Select an image file from your computer to upload.
                 </DialogDescription>
               </DialogHeader>
-              <div className="py-4">
-                <Label htmlFor="image-upload-input">Image File</Label>
-                <Input
-                  id="image-upload-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={onSelectFile}
-                />
-              </div>
+               <div className="py-4">
+                 <Label
+                   htmlFor="image-upload-input"
+                   className={cn(
+                     "flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors",
+                     { "border-primary bg-primary/10": isDragging }
+                   )}
+                   onDragOver={handleDragOver}
+                   onDragLeave={handleDragLeave}
+                   onDrop={handleDrop}
+                 >
+                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                     <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
+                     <p className="mb-2 text-sm text-muted-foreground">
+                       <span className="font-semibold">Click to upload</span> or drag and drop
+                     </p>
+                     <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP</p>
+                   </div>
+                   <Input
+                     id="image-upload-input"
+                     type="file"
+                     accept="image/*"
+                     className="hidden"
+                     onChange={onSelectFile}
+                   />
+                 </Label>
+               </div>
             </DialogContent>
           </Dialog>
         </div>
