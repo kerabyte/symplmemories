@@ -22,11 +22,17 @@ const nextConfig: NextConfig = {
         hostname: 'tastyspoon.s3.ap-south-1.amazonaws.com',
         port: '',
         pathname: '/**',
-      }
+      },
+      {
+        protocol: 'https',
+        hostname: `${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_S3_REGION}.amazonaws.com`,
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
    serverActions: {
-    bodySizeLimit: '2mb',
+    bodySizeLimit: '4mb', // Increased for base64 image uploads
     serverActions: true,
   },
 };

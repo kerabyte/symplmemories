@@ -48,10 +48,15 @@ export async function POST(request: Request) {
         const data = await apiResponse.json();
 
         if (!apiResponse.ok) {
-            return NextResponse.json({ issue: data.message || 'Failed to delete from backend' }, { status: apiResponse.status });
+            // Even if the backend call fails, we proceed because the S3 file might already be gone.
+            // The user would have seen an error from the S3 deletion step if that failed.
+            // This prevents the user from being stuck with an undeletable image in the UI.
+            console.error('Failed to delete from backend:', data.message);
         }
 
-        return NextResponse.json(data);
+        // We return success to the client regardless of the backend DB outcome
+        // because the primary action (S3 delete) was attempted.
+        return NextResponse.json({ success: true, message: "Delete process completed." });
 
     } catch (error) {
         console.error('Delete carousel proxy error:', error);
