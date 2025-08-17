@@ -43,10 +43,10 @@ export default function ApprovePhotosPage() {
 
   const canSwipe = currentIndex >= 0;
 
-  const swiped = async (direction: 'left' | 'right', imageId: string, index: number) => {
+  const swiped = async (direction: 'left' | 'right', image: UnapprovedImage, index: number) => {
     setLastDirection(direction);
     updateCurrentIndex(index - 1);
-    await handleApproval(imageId, direction === 'right');
+    await handleApproval(image, direction === 'right');
   };
 
   const outOfFrame = (id: string, idx: number) => {
@@ -93,12 +93,12 @@ export default function ApprovePhotosPage() {
     fetchUnapprovedImages();
   }, [fetchUnapprovedImages]);
 
-  const handleApproval = async (imageID: string, approve: boolean) => {
+  const handleApproval = async (image: UnapprovedImage, approve: boolean) => {
     try {
       const response = await fetch('/api/admin/approve-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageID, approve }),
+        body: JSON.stringify({ imageID: image.imageID, approve, imageURL: image.imageURL }),
       });
 
       const data = await response.json();
@@ -155,7 +155,7 @@ export default function ApprovePhotosPage() {
                   ref={childRefs[index]}
                   className="absolute inset-0"
                   key={image.imageID}
-                  onSwipe={(dir) => swiped(dir as 'left' | 'right', image.imageID, index)}
+                  onSwipe={(dir) => swiped(dir as 'left' | 'right', image, index)}
                   onCardLeftScreen={() => outOfFrame(image.imageID, index)}
                   preventSwipe={['up', 'down']}
                 >
