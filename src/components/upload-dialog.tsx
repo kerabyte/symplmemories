@@ -499,7 +499,6 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
             }
           }}
         >
-          {isSubmitting && <DialogClose asChild><button className="hidden" /></DialogClose>}
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>Upload Your Memories</DialogTitle>
@@ -608,7 +607,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
                 <Button variant="outline" disabled={isSubmitting}>Cancel</Button>
               </DialogClose>
               <Button type="submit" disabled={isSubmitting || files.length === 0}>
-                {(isSubmitting || hasPendingOrUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? 'Submitting...' : `Upload ${files.length} Photo(s)`}
               </Button>
             </DialogFooter>
