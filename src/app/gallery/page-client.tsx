@@ -15,15 +15,16 @@ import { useRouter } from 'next/navigation';
 
 
 interface CategoryView {
-    name: string;
-    id: string;
-    photos: Photo[];
-    thumbnail?: string;
+  name: string;
+  id: string;
+  photos: Photo[];
+  imageCount?: number;
+  thumbnail?: string;
 }
 
 interface GalleryPageClientProps {
-    initialCategories: CategoryView[];
-    allPhotos: Photo[];
+  initialCategories: CategoryView[];
+  allPhotos: Photo[];
 }
 
 
@@ -31,7 +32,7 @@ export default function GalleryPageClient({ initialCategories, allPhotos }: Gall
   const [categories, setCategories] = React.useState(initialCategories);
   const router = useRouter();
   const isMobile = useIsMobile();
-  
+
   const handleAddPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'> & { categoryId: string }) => {
     // In a real app, this would re-validate data. Here we just navigate for a faster user experience.
     router.push(`/gallery/${newPhotoData.categoryId}`);
@@ -54,7 +55,7 @@ export default function GalleryPageClient({ initialCategories, allPhotos }: Gall
             </Button>
           } />
           <Slideshow photos={allPhotos} trigger={
-             <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon">
               <Play />
               <span className="sr-only">Slideshow</span>
             </Button>
@@ -72,14 +73,14 @@ export default function GalleryPageClient({ initialCategories, allPhotos }: Gall
           </Button>
         </Link>
         <UploadDialog onPhotoAdd={handleAddPhoto} isMobile={false} />
-        <Slideshow photos={allPhotos} isMobile={false}/>
+        <Slideshow photos={allPhotos} isMobile={false} />
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-       <header className="py-4 px-4 md:px-8 sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
+      <header className="py-4 px-4 md:px-8 sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl md:text-4xl font-headline text-foreground">
             Photo Gallery
@@ -93,27 +94,29 @@ export default function GalleryPageClient({ initialCategories, allPhotos }: Gall
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
           {categories.map(category => (
             <Link key={category.id} href={`/gallery/${category.id}`} passHref>
-                <Card
+              <Card
                 className="overflow-hidden cursor-pointer group transition-all duration-300 hover:shadow-xl hover:scale-105 rounded-lg border-border/50"
-                >
+              >
                 <CardContent className="p-0">
-                    <div className="aspect-video relative">
+                  <div className="aspect-video relative">
                     <Image
-                        src={category.thumbnail || 'https://placehold.co/600x400.png'}
-                        alt={`Preview for ${category.name} category`}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-110"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        data-ai-hint="wedding"
+                      src={category.thumbnail || 'https://placehold.co/600x400.png'}
+                      alt={`Preview for ${category.name} category`}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-110"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      data-ai-hint="wedding"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-4 md:p-6">
-                        <h3 className="text-white text-lg md:text-2xl font-headline drop-shadow-md">{category.name}</h3>
-                        <p className="text-white/80 text-xs md:text-sm font-light drop-shadow-md">{category.photos.length} photos</p>
+                      <h3 className="text-white text-lg md:text-2xl font-headline drop-shadow-md">{category.name}</h3>
+                      <p className="text-white/80 text-xs md:text-sm font-light drop-shadow-md">
+                        {category.imageCount !== undefined ? category.imageCount : category.photos.length} photos
+                      </p>
                     </div>
-                    </div>
+                  </div>
                 </CardContent>
-                </Card>
+              </Card>
             </Link>
           ))}
         </div>
