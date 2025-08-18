@@ -200,6 +200,7 @@ export default function HomePageClient({ backgroundImages }: HomePageClientProps
             </Link>
           </div>
         </div>
+         <p className="mt-8 text-sm text-white/70">Powered by SymplMemories</p>
       </div>
     </div>
   );
