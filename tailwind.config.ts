@@ -12,7 +12,7 @@ export default {
       fontFamily: {
         body: ['Alegreya', 'serif'],
         headline: ['Alegreya', 'serif'],
-        brand: ['"Poiret One"', 'sans-serif'],
+        brand: ['"M PLUS 2"', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
