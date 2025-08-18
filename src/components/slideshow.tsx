@@ -10,11 +10,10 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from '@/components/ui/carousel';
 import { Play } from 'lucide-react';
 import Autoplay from "embla-carousel-autoplay"
+import Fade from "embla-carousel-fade";
 import { DropdownMenuItem } from './ui/dropdown-menu';
 
 interface SlideshowProps {
@@ -25,7 +24,7 @@ interface SlideshowProps {
 
 export function Slideshow({ photos, isMobile, trigger }: SlideshowProps) {
   const plugin = React.useRef(
-    Autoplay({ delay: 4000, stopOnInteraction: true })
+    Autoplay({ delay: 5000, stopOnInteraction: true })
   )
 
   const Trigger = trigger ? trigger : (isMobile ? (
@@ -40,6 +39,10 @@ export function Slideshow({ photos, isMobile, trigger }: SlideshowProps) {
     </Button>
   ));
 
+  if (!photos || photos.length === 0) {
+      return null;
+  }
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -49,9 +52,7 @@ export function Slideshow({ photos, isMobile, trigger }: SlideshowProps) {
         <DialogTitle className="sr-only">Photo Slideshow</DialogTitle>
         <Carousel 
             opts={{ loop: true }} 
-            plugins={[plugin.current]}
-            onMouseEnter={plugin.current.stop}
-            onMouseLeave={plugin.current.reset}
+            plugins={[plugin.current, Fade()]}
             className="w-full h-full max-w-6xl max-h-[80vh]">
           <CarouselContent className="h-full">
             {photos.map((photo) => (
@@ -60,23 +61,23 @@ export function Slideshow({ photos, isMobile, trigger }: SlideshowProps) {
                   <div className="relative w-full h-full">
                     <Image
                       src={photo.url}
-                      alt={photo.description}
+                      alt={photo.description || 'Slideshow image'}
                       fill
                       className="object-contain"
                       sizes="100vw"
                       data-ai-hint="wedding couple"
                     />
                   </div>
-                  <div className="absolute bottom-8 left-0 right-0 p-4 text-center bg-black/50">
-                    <p>{photo.description}</p>
-                    <p className="text-sm text-muted-foreground">by {photo.author}</p>
-                  </div>
+                  {(photo.description || photo.author) && (
+                    <div className="absolute bottom-8 left-0 right-0 p-4 text-center bg-black/50">
+                      {photo.description && <p>{photo.description}</p>}
+                      {photo.author && <p className="text-sm text-muted-foreground">by {photo.author}</p>}
+                    </div>
+                  )}
                 </div>
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="absolute left-4 text-white bg-black/30 hover:bg-black/50 border-white/50 hover:text-white" />
-          <CarouselNext className="absolute right-4 text-white bg-black/30 hover:bg-black/50 border-white/50 hover:text-white" />
         </Carousel>
       </DialogContent>
     </Dialog>

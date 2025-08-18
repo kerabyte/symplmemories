@@ -1,7 +1,6 @@
 
 import GalleryPageClient from './page-client';
 import type { Photo } from '@/lib/types';
-import { photos as allPhotos } from '@/lib/mock-data';
 
 interface Category {
   catID: string;
@@ -13,14 +12,20 @@ interface CategoryWithDetails extends Category {
   imageURLs: string[];
 }
 
-async function getCategoriesWithThumbnails(): Promise<CategoryWithDetails[]> {
+interface BackendImage {
+  imageID: string;
+  imageURL: string;
+  createdAt: string;
+}
+
+async function getCategoriesWithThumbnails(): Promise<{ categoriesWithDetails: CategoryWithDetails[], allPhotos: Photo[] }> {
   const wedId = process.env.WEDDING_ID;
   const authKey = process.env.AUTH_KEY;
   const backendUrl = process.env.API_BACKEND_URL;
 
   if (!wedId || !authKey || !backendUrl) {
     console.error('Server configuration error for getCategories.');
-    return [];
+    return { categoriesWithDetails: [], allPhotos: [] };
   }
 
   try {
@@ -33,13 +38,14 @@ async function getCategoriesWithThumbnails(): Promise<CategoryWithDetails[]> {
 
     if (!res.ok) {
       console.error('Failed to fetch categories:', res.status, await res.text());
-      return [];
+      return { categoriesWithDetails: [], allPhotos: [] };
     }
 
     const data = await res.json();
     const categories: Category[] = data.categories || [];
+    const allPhotos: Photo[] = [];
 
-    // Fetch image counts and a thumbnail for each category in parallel
+    // Fetch image counts and thumbnails for each category in parallel
     const categoriesWithDetails = await Promise.all(
       categories.map(async (cat: Category) => {
         try {
@@ -56,19 +62,36 @@ async function getCategoriesWithThumbnails(): Promise<CategoryWithDetails[]> {
 
           if (imageRes.ok) {
             const imageData = await imageRes.json();
-            const images = imageData.images || [];
+            const images: BackendImage[] = imageData.images || [];
             const totalApproved = imageData.totalApproved || 0;
+            
+            // Add fetched images to the global allPhotos array
+            images.forEach(img => {
+              allPhotos.push({
+                id: img.imageID,
+                url: img.imageURL,
+                author: 'Guest',
+                description: '',
+                timestamp: img.createdAt,
+                category: cat.catName,
+                comments: [],
+                voiceNotes: [],
+              });
+            });
+
             // Limit to a maximum of 10 images for the preview
             const imageURLs = images.slice(0, 10).map((img: any) => img.imageURL);
 
             return {
-              ...cat,
+              id: cat.catID,
+              name: cat.catName,
               imageCount: totalApproved,
               imageURLs: imageURLs,
             };
           } else {
             return {
-              ...cat,
+              id: cat.catID,
+              name: cat.catName,
               imageCount: 0,
               imageURLs: [],
             };
@@ -76,37 +99,30 @@ async function getCategoriesWithThumbnails(): Promise<CategoryWithDetails[]> {
         } catch (error) {
           console.error(`Error fetching image count for category ${cat.catID}:`, error);
           return {
-            ...cat,
+            id: cat.catID,
+            name: cat.catName,
             imageCount: 0,
             imageURLs: [],
           };
         }
       })
     );
+    
+    // Remap to match expected structure for client
+    const formattedCategories = categoriesWithDetails.map(cat => ({
+      ...cat,
+      photos: [], // This is not used on the client for this page
+    }));
 
-    return categoriesWithDetails;
+    return { categoriesWithDetails: formattedCategories, allPhotos };
   } catch (error) {
     console.error('Error fetching categories:', error);
-    return [];
+    return { categoriesWithDetails: [], allPhotos: [] };
   }
 }
 
 export default async function GalleryPage() {
-  const categories = await getCategoriesWithThumbnails();
+  const { categoriesWithDetails, allPhotos } = await getCategoriesWithThumbnails();
 
-  // Use mock photos for slideshow
-  const formattedPhotos: Photo[] = allPhotos;
-
-  // Create category objects for the UI using real image counts and thumbnails from backend
-  const categoryData = categories.map(cat => {
-    return {
-      name: cat.catName,
-      id: cat.catID,
-      photos: [], // We don't load all photos here, just show counts
-      imageCount: cat.imageCount,
-      imageURLs: cat.imageURLs,
-    };
-  });
-
-  return <GalleryPageClient initialCategories={categoryData} allPhotos={formattedPhotos} />;
+  return <GalleryPageClient initialCategories={categoriesWithDetails} allPhotos={allPhotos} />;
 }
