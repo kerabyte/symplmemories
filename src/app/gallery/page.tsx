@@ -58,7 +58,8 @@ async function getCategoriesWithThumbnails(): Promise<CategoryWithDetails[]> {
             const imageData = await imageRes.json();
             const images = imageData.images || [];
             const totalApproved = imageData.totalApproved || 0;
-            const imageURLs = images.map((img: any) => img.imageURL);
+            // Limit to a maximum of 10 images for the preview
+            const imageURLs = images.slice(0, 10).map((img: any) => img.imageURL);
 
             return {
               ...cat,
