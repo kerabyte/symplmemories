@@ -10,7 +10,7 @@ interface Category {
 
 interface CategoryWithDetails extends Category {
   imageCount: number;
-  thumbnail: string;
+  imageURLs: string[];
 }
 
 async function getCategoriesWithThumbnails(): Promise<CategoryWithDetails[]> {
@@ -58,19 +58,18 @@ async function getCategoriesWithThumbnails(): Promise<CategoryWithDetails[]> {
             const imageData = await imageRes.json();
             const images = imageData.images || [];
             const totalApproved = imageData.totalApproved || 0;
-            // Use the first image as a thumbnail, or a placeholder if none exist
-            const thumbnail = images.length > 0 ? images[0].imageURL : `https://placehold.co/600x400.png`;
+            const imageURLs = images.map((img: any) => img.imageURL);
 
             return {
               ...cat,
               imageCount: totalApproved,
-              thumbnail: thumbnail,
+              imageURLs: imageURLs,
             };
           } else {
             return {
               ...cat,
               imageCount: 0,
-              thumbnail: `https://placehold.co/600x400.png`,
+              imageURLs: [],
             };
           }
         } catch (error) {
@@ -78,7 +77,7 @@ async function getCategoriesWithThumbnails(): Promise<CategoryWithDetails[]> {
           return {
             ...cat,
             imageCount: 0,
-            thumbnail: `https://placehold.co/600x400.png`,
+            imageURLs: [],
           };
         }
       })
@@ -104,7 +103,7 @@ export default async function GalleryPage() {
       id: cat.catID,
       photos: [], // We don't load all photos here, just show counts
       imageCount: cat.imageCount,
-      thumbnail: cat.thumbnail,
+      imageURLs: cat.imageURLs,
     };
   });
 
