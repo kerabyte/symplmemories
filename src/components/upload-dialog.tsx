@@ -40,7 +40,7 @@ interface Category {
 }
 
 interface UploadDialogProps {
-  onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => void;
+  onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'> & { categoryId: string }) => void;
   isMobile?: boolean;
   trigger?: React.ReactNode;
 }
@@ -463,7 +463,8 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
           url: uploadData.urls[0],
           author: 'Guest',
           description: '',
-          category: selectedCategory.catName
+          category: selectedCategory.catName,
+          categoryId: selectedCategory.catID,
         });
       }
 
@@ -590,7 +591,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
                       <SelectItem key={cat.catID} value={cat.catID}>{cat.catName}</SelectItem>
                     ))}
                     {categories.length > 0 && <SelectSeparator />}
-                    <SelectItem value={CREATE_NEW_CATEGORY_VALUE} className="text-primary-foreground hover:text-primary-foreground focus:text-primary-foreground">
+                    <SelectItem value={CREATE_NEW_CATEGORY_VALUE} className="text-primary-foreground focus:text-primary-foreground">
                       <div className="flex items-center gap-2">
                         <PlusCircle className="h-4 w-4" />
                         Create new category...

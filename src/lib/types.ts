@@ -19,7 +19,12 @@ export interface Photo {
   description: string;
   timestamp: string;
   author: string;
-  category: string;
+  category: string; // This will now be the category ID
   comments: Comment[];
   voiceNotes: VoiceNote[];
+}
+
+export interface Category {
+  catID: string;
+  catName: string;
 }

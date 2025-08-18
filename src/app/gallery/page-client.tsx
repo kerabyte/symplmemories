@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 
 interface CategoryView {
     name: string;
+    id: string;
     photos: Photo[];
     thumbnail?: string;
 }
@@ -31,9 +32,9 @@ export default function GalleryPageClient({ initialCategories, allPhotos }: Gall
   const router = useRouter();
   const isMobile = useIsMobile();
   
-  const handleAddPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => {
+  const handleAddPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'> & { categoryId: string }) => {
     // In a real app, this would re-validate data. Here we just navigate for a faster user experience.
-    router.push(`/gallery/${encodeURIComponent(newPhotoData.category)}`);
+    router.push(`/gallery/${newPhotoData.categoryId}`);
   };
 
   const renderHeaderActions = () => {
@@ -91,7 +92,7 @@ export default function GalleryPageClient({ initialCategories, allPhotos }: Gall
         <h2 className="text-xl md:text-2xl font-headline text-center mb-6 md:mb-8">Categories</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
           {categories.map(category => (
-            <Link key={category.name} href={`/gallery/${encodeURIComponent(category.name)}`} passHref>
+            <Link key={category.id} href={`/gallery/${category.id}`} passHref>
                 <Card
                 className="overflow-hidden cursor-pointer group transition-all duration-300 hover:shadow-xl hover:scale-105 rounded-lg border-border/50"
                 >

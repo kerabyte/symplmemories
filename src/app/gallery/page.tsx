@@ -60,21 +60,17 @@ export default async function GalleryPage() {
   const formattedPhotos: Photo[] = allPhotos;
 
   // Create category objects for the UI
-  // This will now correctly show categories from your backend,
-  // but will use the mock data to populate photo counts and thumbnails.
   const categoryData = categories.map(cat => {
     const photosInCategory = formattedPhotos.filter(p => p.category === cat.catName);
     return {
       name: cat.catName,
+      id: cat.catID,
       photos: photosInCategory,
       // Use placeholder for thumbnail as requested
       thumbnail: `https://placehold.co/600x400.png`,
     };
   });
 
-  // Since we want to display all categories from the backend, even if they have no mock photos,
-  // we will pass categoryData directly. We can handle the "0 photos" case in the UI.
-  
   // However, if the backend returns no categories but we have mock photos,
   // let's create categories from the mock data to show something.
   if (categoryData.length === 0 && allPhotos.length > 0) {
@@ -83,6 +79,7 @@ export default async function GalleryPage() {
           const photosInCategory = allPhotos.filter(p => p.category === name);
           return {
               name,
+              id: `mock-${name.replace(/\s+/g, '-').toLowerCase()}`,
               photos: photosInCategory,
               thumbnail: photosInCategory[0]?.url || `https://placehold.co/6000x4000.png`
           }
