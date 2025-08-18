@@ -200,7 +200,7 @@ export default function HomePageClient({ backgroundImages }: HomePageClientProps
             </Link>
           </div>
         </div>
-         <p className="mt-8 text-sm text-white/70 font-brand font-bold">Powered by SymplMemories</p>
+         <p className="mt-8 text-sm text-white/70 font-brand font-bold bg-black/30 px-4 py-2 rounded-full">Powered by SymplMemories</p>
       </div>
     </div>
   );
