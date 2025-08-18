@@ -34,28 +34,49 @@ const CategoryCard = ({ category }: { category: CategoryView }) => {
     if (category.imageURLs && category.imageURLs.length > 1) {
       const intervalId = setInterval(() => {
         setCurrentImageIndex(prevIndex => (prevIndex + 1) % category.imageURLs.length);
-      }, 2000); // Change image every 2 seconds
+      }, 3000); // Change image every 3 seconds
 
       return () => clearInterval(intervalId);
     }
   }, [category.imageURLs]);
 
-  const displayedImage = category.imageURLs?.[currentImageIndex] || 'https://placehold.co/600x400.png';
+  const hasImages = category.imageURLs && category.imageURLs.length > 0;
 
   return (
     <Card
       className="overflow-hidden cursor-pointer group transition-all duration-300 hover:shadow-xl hover:scale-105 rounded-lg border-border/50"
     >
       <CardContent className="p-0">
-        <div className="aspect-video relative">
-          <Image
-            src={displayedImage}
-            alt={`Preview for ${category.name} category`}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-110"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            data-ai-hint="wedding"
-          />
+        <div className="aspect-video relative overflow-hidden">
+          {hasImages ? (
+            <div
+              className="flex h-full w-full transition-transform duration-700 ease-in-out"
+              style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+            >
+              {category.imageURLs.map((url, index) => (
+                <div key={index} className="h-full w-full flex-shrink-0 relative">
+                  <Image
+                    src={url}
+                    alt={`Preview ${index + 1} for ${category.name} category`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    priority={index < 2} // Prioritize first couple of images
+                    data-ai-hint="wedding"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+             <Image
+                src={'https://placehold.co/600x400.png'}
+                alt={`Placeholder for ${category.name} category`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                data-ai-hint="wedding"
+              />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
           <div className="absolute bottom-0 left-0 p-4 md:p-6">
             <h3 className="text-white text-lg md:text-2xl font-headline drop-shadow-md">{category.name}</h3>
