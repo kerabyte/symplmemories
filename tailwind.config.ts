@@ -12,6 +12,7 @@ export default {
       fontFamily: {
         body: ['Alegreya', 'serif'],
         headline: ['Alegreya', 'serif'],
+        brand: ['"Poiret One"', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
