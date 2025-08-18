@@ -8,11 +8,12 @@ interface Category {
   catName: string;
 }
 
-interface CategoryWithCount extends Category {
+interface CategoryWithDetails extends Category {
   imageCount: number;
+  thumbnail: string;
 }
 
-async function getCategoriesWithCounts(): Promise<CategoryWithCount[]> {
+async function getCategoriesWithThumbnails(): Promise<CategoryWithDetails[]> {
   const wedId = process.env.WEDDING_ID;
   const authKey = process.env.AUTH_KEY;
   const backendUrl = process.env.API_BACKEND_URL;
@@ -36,10 +37,10 @@ async function getCategoriesWithCounts(): Promise<CategoryWithCount[]> {
     }
 
     const data = await res.json();
-    const categories = data.categories || [];
+    const categories: Category[] = data.categories || [];
 
-    // Fetch image counts for each category in parallel
-    const categoriesWithCounts = await Promise.all(
+    // Fetch image counts and a thumbnail for each category in parallel
+    const categoriesWithDetails = await Promise.all(
       categories.map(async (cat: Category) => {
         try {
           const imageRes = await fetch(`${backendUrl}/api/wedding/lstimages`, {
@@ -55,14 +56,21 @@ async function getCategoriesWithCounts(): Promise<CategoryWithCount[]> {
 
           if (imageRes.ok) {
             const imageData = await imageRes.json();
+            const images = imageData.images || [];
+            const totalApproved = imageData.totalApproved || 0;
+            // Use the first image as a thumbnail, or a placeholder if none exist
+            const thumbnail = images.length > 0 ? images[0].imageURL : `https://placehold.co/600x400.png`;
+
             return {
               ...cat,
-              imageCount: imageData.totalApproved || 0,
+              imageCount: totalApproved,
+              thumbnail: thumbnail,
             };
           } else {
             return {
               ...cat,
               imageCount: 0,
+              thumbnail: `https://placehold.co/600x400.png`,
             };
           }
         } catch (error) {
@@ -70,68 +78,35 @@ async function getCategoriesWithCounts(): Promise<CategoryWithCount[]> {
           return {
             ...cat,
             imageCount: 0,
+            thumbnail: `https://placehold.co/600x400.png`,
           };
         }
       })
     );
 
-    // Fallback to mock data if no categories are returned but photos exist
-    if (categoriesWithCounts.length === 0 && allPhotos.length > 0) {
-      const mockCategories = [...new Set(allPhotos.map(p => p.category))];
-      return mockCategories.map((catName, index) => ({
-        catID: `mock-cat-${index}`,
-        catName: catName,
-        imageCount: allPhotos.filter(p => p.category === catName).length,
-      }));
-    }
-
-    return categoriesWithCounts;
+    return categoriesWithDetails;
   } catch (error) {
     console.error('Error fetching categories:', error);
-    // If fetching fails, create categories from mock data to ensure the page still works
-    const mockCategories = [...new Set(allPhotos.map(p => p.category))];
-    return mockCategories.map((catName, index) => ({
-      catID: `mock-cat-${index}`,
-      catName: catName,
-      imageCount: allPhotos.filter(p => p.category === catName).length,
-    }));
+    return [];
   }
 }
 
 export default async function GalleryPage() {
-  const categories = await getCategoriesWithCounts();
+  const categories = await getCategoriesWithThumbnails();
 
   // Use mock photos for slideshow
   const formattedPhotos: Photo[] = allPhotos;
 
-  // Create category objects for the UI using real image counts from backend
+  // Create category objects for the UI using real image counts and thumbnails from backend
   const categoryData = categories.map(cat => {
     return {
       name: cat.catName,
       id: cat.catID,
       photos: [], // We don't load all photos here, just show counts
       imageCount: cat.imageCount,
-      // Use placeholder for thumbnail as requested
-      thumbnail: `https://placehold.co/600x400.png`,
+      thumbnail: cat.thumbnail,
     };
   });
-
-  // However, if the backend returns no categories but we have mock photos,
-  // let's create categories from the mock data to show something.
-  if (categoryData.length === 0 && allPhotos.length > 0) {
-    const mockCategoryNames = [...new Set(allPhotos.map(p => p.category))];
-    const mockCategoryData = mockCategoryNames.map(name => {
-      const photosInCategory = allPhotos.filter(p => p.category === name);
-      return {
-        name,
-        id: `mock-${name.replace(/\s+/g, '-').toLowerCase()}`,
-        photos: photosInCategory,
-        imageCount: photosInCategory.length,
-        thumbnail: photosInCategory[0]?.url || `https://placehold.co/600x400.png`
-      }
-    })
-    return <GalleryPageClient initialCategories={mockCategoryData} allPhotos={formattedPhotos} />;
-  }
 
   return <GalleryPageClient initialCategories={categoryData} allPhotos={formattedPhotos} />;
 }
