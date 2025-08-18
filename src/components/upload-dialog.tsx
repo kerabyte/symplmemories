@@ -453,20 +453,8 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
 
       toast({
         title: 'Upload Complete!',
-        description: `${uploadData.urls.length} photos added to the gallery.`
+        description: `Image has been uploaded. Will be shown in gallery pending Approval from Admin`,
       });
-
-      const selectedCategory = categories.find(c => c.catID === categoryId);
-      if (selectedCategory) {
-        // Trigger navigation to the gallery
-        onPhotoAdd({
-          url: uploadData.urls[0],
-          author: 'Guest',
-          description: '',
-          category: selectedCategory.catName,
-          categoryId: selectedCategory.catID,
-        });
-      }
 
       setOpen(false);
 
@@ -503,7 +491,15 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
         <DialogTrigger asChild>
           {Trigger}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[580px] w-full max-w-[90vw] rounded-lg flex flex-col max-h-[90vh]">
+        <DialogContent
+          className="sm:max-w-[580px] w-full max-w-[90vw] rounded-lg flex flex-col max-h-[90vh]"
+          onInteractOutside={(e) => {
+            if (isSubmitting) {
+              e.preventDefault();
+            }
+          }}
+        >
+          {isSubmitting && <DialogClose asChild><button className="hidden" /></DialogClose>}
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>Upload Your Memories</DialogTitle>
@@ -537,6 +533,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
                     className="hidden"
                     onChange={onSelectFile}
                     multiple
+                    disabled={isSubmitting}
                   />
                 </Label>
               ) : (
@@ -557,6 +554,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
                           variant="destructive"
                           className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => setFiles(prev => prev.filter(file => file.id !== f.id))}
+                          disabled={isSubmitting}
                         >
                           <XCircle className="h-4 w-4" />
                         </Button>
@@ -565,7 +563,10 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
                     {/* Add more files button */}
                     <Label
                       htmlFor="add-more-input"
-                      className="aspect-square rounded-md border-2 border-dashed border-muted-foreground/50 flex items-center justify-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors"
+                      className={cn(
+                        "aspect-square rounded-md border-2 border-dashed border-muted-foreground/50 flex items-center justify-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors",
+                        isSubmitting && "cursor-not-allowed opacity-50"
+                      )}
                     >
                       <PlusCircle className="h-8 w-8 text-muted-foreground" />
                       <Input
@@ -575,6 +576,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
                         className="hidden"
                         onChange={onSelectFile}
                         multiple
+                        disabled={isSubmitting}
                       />
                     </Label>
                   </div>
@@ -582,7 +584,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
               )}
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select value={categoryId} onValueChange={handleCategoryChange} required>
+                <Select value={categoryId} onValueChange={handleCategoryChange} required disabled={isSubmitting}>
                   <SelectTrigger id="category" disabled={isFetchingCategories}>
                     <SelectValue placeholder={isFetchingCategories ? "Loading categories..." : "Select a category"} />
                   </SelectTrigger>
@@ -602,6 +604,9 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
               </div>
             </div>
             <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline" disabled={isSubmitting}>Cancel</Button>
+              </DialogClose>
               <Button type="submit" disabled={isSubmitting || files.length === 0}>
                 {(isSubmitting || hasPendingOrUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? 'Submitting...' : `Upload ${files.length} Photo(s)`}
