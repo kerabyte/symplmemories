@@ -72,7 +72,7 @@ async function getApprovedPhotos(catID: string): Promise<Photo[]> {
         description: 'Uploaded by a guest', // Backend doesn't provide this, so we use a placeholder
         author: 'Guest', // Backend doesn't provide this
         timestamp: img.createdAt,
-        category: catID, // We use the catID here
+        category: catID,
         comments: [], // Comments would be fetched separately
         voiceNotes: [], // Voice notes would be fetched separately
     }));
