@@ -172,7 +172,7 @@ export default function ApprovePhotosPage() {
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
-      <header className="py-4 px-4 md:px-8 sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b flex-shrink-0">
+      <header className="py-4 px-4 md:px-8 sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b flex-shrink-0 rounded-b-xl shadow-md">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Link href="/admin/dashboard" passHref>
