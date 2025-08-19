@@ -75,7 +75,6 @@ async function getCategoriesWithThumbnails(): Promise<{ categoriesWithDetails: C
                 timestamp: img.createdAt,
                 category: cat.catName,
                 comments: [],
-                voiceNotes: [],
               });
             });
 

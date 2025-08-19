@@ -6,13 +6,6 @@ export interface Comment {
   timestamp: string;
 }
 
-export interface VoiceNote {
-  id: string;
-  author: string;
-  audioUrl: string;
-  timestamp: string;
-}
-
 export interface Photo {
   id:string;
   url: string;
@@ -21,7 +14,6 @@ export interface Photo {
   author: string;
   category: string; // This will now be the category ID
   comments: Comment[];
-  voiceNotes: VoiceNote[];
 }
 
 export interface Category {

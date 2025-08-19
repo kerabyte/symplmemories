@@ -96,7 +96,7 @@ export default function GalleryPageClient({ initialCategories, allPhotos }: Gall
   const router = useRouter();
   const isMobile = useIsMobile();
 
-  const handleAddPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'> & { categoryId: string }) => {
+  const handleAddPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments'> & { categoryId: string }) => {
     // In a real app, this would re-validate data. Here we just navigate for a faster user experience.
     router.refresh();
   };

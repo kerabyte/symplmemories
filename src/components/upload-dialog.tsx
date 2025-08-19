@@ -40,7 +40,7 @@ interface Category {
 }
 
 interface UploadDialogProps {
-  onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'> & { categoryId: string }) => void;
+  onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments'> & { categoryId: string }) => void;
   isMobile?: boolean;
   trigger?: React.ReactNode;
 }

@@ -1,3 +1,4 @@
+
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import CategoryPageClient from './page-client';
@@ -78,7 +79,6 @@ async function getCategoryData(categoryId: string) {
       timestamp: img.createdAt,
       category: categoryName,
       comments: [],
-      voiceNotes: [],
     }));
 
     return {

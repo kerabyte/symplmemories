@@ -35,13 +35,12 @@ export default function CategoryPageClient({
         setPhotos(initialPhotos.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
     }, [initialPhotos]);
 
-    const handleAddPhoto = React.useCallback((newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'> & { categoryId: string }) => {
+    const handleAddPhoto = React.useCallback((newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments'> & { categoryId: string }) => {
         // Add optimistic update
         const newPhoto: Photo = {
             id: `temp-${Date.now()}`,
             timestamp: new Date().toISOString(),
             comments: [],
-            voiceNotes: [],
             ...newPhotoData,
         };
 

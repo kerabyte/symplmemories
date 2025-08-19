@@ -150,7 +150,7 @@ export default function HomePageClient({ backgroundImages }: HomePageClientProps
     }
   }, [backgroundImages]);
 
-  const addPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments' | 'voiceNotes'>) => {
+  const addPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments'>) => {
      // In a real app, this would re-validate data. Here we just navigate.
     router.push(`/gallery/${encodeURIComponent(newPhotoData.category)}`);
   };
