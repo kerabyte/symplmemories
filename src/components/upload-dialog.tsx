@@ -715,7 +715,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
             <DialogHeader>
               <DialogTitle>Upload Your Memories</DialogTitle>
               <DialogDescription>
-                Share photos from the special day. Supports JPG, PNG, WEBP, HEIC and more.
+                Share your memories with us
               </DialogDescription>
             </DialogHeader>
             
