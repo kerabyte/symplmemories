@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Camera, Loader2, PlusCircle, UploadCloud, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Camera, Loader2, PlusCircle, UploadCloud, CheckCircle, XCircle, AlertCircle, RefreshCw, CircleDotDashed } from 'lucide-react';
 import type { Photo } from '@/lib/types';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -33,6 +33,7 @@ import { DropdownMenuItem } from './ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from './ui/select';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
+import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 
 interface Category {
   catID: string;
@@ -43,6 +44,7 @@ interface UploadDialogProps {
   onPhotoAdd: (photo: Omit<Photo, 'id' | 'timestamp' | 'comments'> & { categoryId: string }) => void;
   isMobile?: boolean;
   trigger?: React.ReactNode;
+  initialView?: 'upload' | 'camera';
 }
 
 const CREATE_NEW_CATEGORY_VALUE = 'create-new-category';
@@ -58,7 +60,7 @@ interface UploadableFile {
   error?: string;
 }
 
-export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProps) {
+export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upload' }: UploadDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [files, setFiles] = React.useState<UploadableFile[]>([]);
   const [categoryId, setCategoryId] = React.useState<string>('');
@@ -71,13 +73,60 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
   const [isDragging, setIsDragging] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  // Camera states
+  const [view, setView] = React.useState<'upload' | 'camera'>(initialView);
+  const [stream, setStream] = React.useState<MediaStream | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+
   const { toast } = useToast();
 
   const resetState = () => {
     setFiles([]);
     setCategoryId('');
     setIsSubmitting(false);
+    setView(initialView);
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    setStream(null);
+    setHasCameraPermission(null);
   };
+  
+  const getCameraPermission = React.useCallback(async () => {
+    if (stream) return;
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      setStream(mediaStream);
+      setHasCameraPermission(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setHasCameraPermission(false);
+      toast({
+        variant: 'destructive',
+        title: 'Camera Access Denied',
+        description: 'Please enable camera permissions in your browser settings to use this feature.',
+      });
+    }
+  }, [stream, toast]);
+
+  React.useEffect(() => {
+    if (open && view === 'camera') {
+      getCameraPermission();
+    }
+    // Cleanup stream on dialog close or view change
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [open, view, stream, getCameraPermission]);
+
 
   const fetchCategories = React.useCallback(async () => {
     setIsFetchingCategories(true);
@@ -119,11 +168,32 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
       status: 'pending',
     }));
     setFiles(prev => [...prev, ...newUploads]);
+    setView('upload'); // Switch back to upload view after selection
   };
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       processFiles(e.target.files);
+    }
+  };
+  
+  const handleCapture = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        canvas.toBlob(blob => {
+          if (blob) {
+            const fileName = `capture-${new Date().toISOString()}.jpg`;
+            const file = new File([blob], fileName, { type: 'image/jpeg' });
+            processFiles({ 0: file, length: 1 } as unknown as FileList);
+          }
+        }, 'image/jpeg');
+      }
     }
   };
 
@@ -456,6 +526,14 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
         description: `Image has been uploaded. Will be shown in gallery pending Approval from Admin`,
       });
 
+      onPhotoAdd({ 
+        url: '', // These are not used since we don't redirect
+        author: '',
+        description: '',
+        category: '',
+        categoryId: categoryId,
+      });
+
       setOpen(false);
 
     } catch (error) {
@@ -469,6 +547,136 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
       setIsSubmitting(false);
     }
   };
+  
+  const renderUploadView = () => (
+    <>
+      {files.length === 0 ? (
+        <Label
+          htmlFor="photo-upload-input"
+          className={cn(
+            "flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors",
+            { "border-primary bg-primary/10": isDragging }
+          )}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+            <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+            <p className="mb-1 text-sm text-muted-foreground">
+              <span className="font-semibold">Click to upload</span> or drag and drop
+            </p>
+            <p className="text-xs text-muted-foreground">JPG, PNG, WEBP, HEIC, etc. (Max 20MB each)</p>
+          </div>
+          <Input
+            id="photo-upload-input"
+            type="file"
+            accept="image/*,.heic,.heif"
+            className="hidden"
+            onChange={onSelectFile}
+            multiple
+            disabled={isSubmitting}
+          />
+        </Label>
+      ) : (
+        <ScrollArea className="h-48 pr-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {files.map(f => (
+              <div key={f.id} className="relative aspect-square rounded-md overflow-hidden border group">
+                <Image src={f.preview} alt={f.file.name} fill className="object-cover" />
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  {f.status === 'pending' && <div className="text-white text-xs">Ready</div>}
+                  {f.status === 'uploading' && <Loader2 className="h-6 w-6 animate-spin text-white" />}
+                  {f.status === 'completed' && <CheckCircle className="h-6 w-6 text-green-500" />}
+                  {f.status === 'error' && <AlertCircle className="h-6 w-6 text-destructive" />}
+                </div>
+                {/* Remove button */}
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => setFiles(prev => prev.filter(file => file.id !== f.id))}
+                  disabled={isSubmitting}
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            {/* Add more files button */}
+            <Label
+              htmlFor="add-more-input"
+              className={cn(
+                "aspect-square rounded-md border-2 border-dashed border-muted-foreground/50 flex items-center justify-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors",
+                isSubmitting && "cursor-not-allowed opacity-50"
+              )}
+            >
+              <PlusCircle className="h-8 w-8 text-muted-foreground" />
+              <Input
+                id="add-more-input"
+                type="file"
+                accept="image/*,.heic,.heif"
+                className="hidden"
+                onChange={onSelectFile}
+                multiple
+                disabled={isSubmitting}
+              />
+            </Label>
+          </div>
+        </ScrollArea>
+      )}
+      <div className="space-y-2">
+        <Label htmlFor="category">Category</Label>
+        <Select value={categoryId} onValueChange={handleCategoryChange} required disabled={isSubmitting}>
+          <SelectTrigger id="category" disabled={isFetchingCategories}>
+            <SelectValue placeholder={isFetchingCategories ? "Loading categories..." : "Select a category"} />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map(cat => (
+              <SelectItem key={cat.catID} value={cat.catID}>{cat.catName}</SelectItem>
+            ))}
+            {categories.length > 0 && <SelectSeparator />}
+            <SelectItem value={CREATE_NEW_CATEGORY_VALUE} className="text-primary-foreground focus:text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <PlusCircle className="h-4 w-4" />
+                Create new category...
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </>
+  );
+
+  const renderCameraView = () => (
+    <div className="flex flex-col items-center gap-4">
+        <div className="w-full relative aspect-[9/16] max-h-[40vh] bg-black rounded-lg overflow-hidden">
+             <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+            <canvas ref={canvasRef} className="hidden" />
+
+            {hasCameraPermission === null && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black/50">
+                    <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                    <p>Starting camera...</p>
+                </div>
+            )}
+             {hasCameraPermission === false && (
+                 <div className="absolute inset-0 flex items-center justify-center">
+                    <Alert variant="destructive" className="m-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Camera Access Denied</AlertTitle>
+                        <AlertDescription>
+                            Please allow camera access in your browser settings to use this feature.
+                        </AlertDescription>
+                    </Alert>
+                </div>
+            )}
+        </div>
+        <Button onClick={handleCapture} size="lg" className="rounded-full h-16 w-16 p-0" disabled={!hasCameraPermission || isSubmitting}>
+            <CircleDotDashed className="h-10 w-10" />
+            <span className="sr-only">Capture Photo</span>
+        </Button>
+    </div>
+  );
 
   const Trigger = trigger ? trigger : (isMobile ? (
     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -481,9 +689,6 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
       Upload Photo
     </Button>
   ));
-
-  const allUploadsDone = files.length > 0 && files.every(f => f.status === 'completed' || f.status === 'error');
-  const hasPendingOrUploading = files.some(f => f.status === 'pending' || f.status === 'uploading');
 
   return (
     <>
@@ -498,119 +703,38 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger }: UploadDialogProp
               e.preventDefault();
             }
           }}
+          hideCloseButton={isSubmitting}
         >
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>Upload Your Memories</DialogTitle>
               <DialogDescription>
-                Share photos from the special day. Supports JPG, PNG, WEBP, HEIC and more. Upload multiple photos at once (up to 20MB each).
+                Share photos from the special day. Supports JPG, PNG, WEBP, HEIC and more.
               </DialogDescription>
             </DialogHeader>
-            <div className="flex-1 min-h-0 py-4 grid gap-4">
-              {files.length === 0 ? (
-                <Label
-                  htmlFor="photo-upload-input"
-                  className={cn(
-                    "flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors",
-                    { "border-primary bg-primary/10": isDragging }
-                  )}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                    <p className="mb-1 text-sm text-muted-foreground">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-muted-foreground">JPG, PNG, WEBP, HEIC, etc. (Max 20MB each)</p>
-                  </div>
-                  <Input
-                    id="photo-upload-input"
-                    type="file"
-                    accept="image/*,.heic,.heif"
-                    className="hidden"
-                    onChange={onSelectFile}
-                    multiple
-                    disabled={isSubmitting}
-                  />
-                </Label>
-              ) : (
-                <ScrollArea className="h-48 pr-3">
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {files.map(f => (
-                      <div key={f.id} className="relative aspect-square rounded-md overflow-hidden border group">
-                        <Image src={f.preview} alt={f.file.name} fill className="object-cover" />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          {f.status === 'pending' && <div className="text-white text-xs">Ready</div>}
-                          {f.status === 'uploading' && <Loader2 className="h-6 w-6 animate-spin text-white" />}
-                          {f.status === 'completed' && <CheckCircle className="h-6 w-6 text-green-500" />}
-                          {f.status === 'error' && <AlertCircle className="h-6 w-6 text-destructive" />}
-                        </div>
-                        {/* Remove button */}
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => setFiles(prev => prev.filter(file => file.id !== f.id))}
-                          disabled={isSubmitting}
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    {/* Add more files button */}
-                    <Label
-                      htmlFor="add-more-input"
-                      className={cn(
-                        "aspect-square rounded-md border-2 border-dashed border-muted-foreground/50 flex items-center justify-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors",
-                        isSubmitting && "cursor-not-allowed opacity-50"
-                      )}
-                    >
-                      <PlusCircle className="h-8 w-8 text-muted-foreground" />
-                      <Input
-                        id="add-more-input"
-                        type="file"
-                        accept="image/*,.heic,.heif"
-                        className="hidden"
-                        onChange={onSelectFile}
-                        multiple
-                        disabled={isSubmitting}
-                      />
-                    </Label>
-                  </div>
-                </ScrollArea>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select value={categoryId} onValueChange={handleCategoryChange} required disabled={isSubmitting}>
-                  <SelectTrigger id="category" disabled={isFetchingCategories}>
-                    <SelectValue placeholder={isFetchingCategories ? "Loading categories..." : "Select a category"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.catID} value={cat.catID}>{cat.catName}</SelectItem>
-                    ))}
-                    {categories.length > 0 && <SelectSeparator />}
-                    <SelectItem value={CREATE_NEW_CATEGORY_VALUE} className="text-primary-foreground focus:text-primary-foreground">
-                      <div className="flex items-center gap-2">
-                        <PlusCircle className="h-4 w-4" />
-                        Create new category...
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
+            <div className="my-4 border-b">
+                 <div className="flex justify-around">
+                     <Button type="button" variant={view === 'upload' ? 'ghost' : 'ghost'} onClick={() => setView('upload')} className={cn("flex-1 rounded-none", view === 'upload' && "border-b-2 border-primary text-primary")}>Upload</Button>
+                     <Button type="button" variant={view === 'camera' ? 'ghost' : 'ghost'} onClick={() => setView('camera')} className={cn("flex-1 rounded-none", view === 'camera' && "border-b-2 border-primary text-primary")}>Camera</Button>
+                </div>
             </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline" disabled={isSubmitting}>Cancel</Button>
-              </DialogClose>
-              <Button type="submit" disabled={isSubmitting || files.length === 0}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Submitting...' : `Upload ${files.length} Photo(s)`}
-              </Button>
-            </DialogFooter>
+
+            <div className="flex-1 min-h-0 py-4 grid gap-4">
+                {view === 'upload' ? renderUploadView() : renderCameraView()}
+            </div>
+
+            {view === 'upload' && (
+                 <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline" disabled={isSubmitting}>Cancel</Button>
+                    </DialogClose>
+                    <Button type="submit" disabled={isSubmitting || files.length === 0 || !categoryId}>
+                      {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      {isSubmitting ? 'Submitting...' : `Upload ${files.length} Photo(s)`}
+                    </Button>
+                </DialogFooter>
+            )}
           </form>
         </DialogContent>
       </Dialog>

@@ -17,6 +17,7 @@ import { Camera, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import type { Photo } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 interface HomePageClientProps {
@@ -123,8 +124,8 @@ export default function HomePageClient({ backgroundImages }: HomePageClientProps
     Autoplay({ delay: 15000, stopOnInteraction: false })
   );
   const router = useRouter();
+  const isMobile = useIsMobile();
 
-  const [allPhotos, setAllPhotos] = React.useState<Photo[]>([]);
 
   // Preload next few images for smoother transitions
   React.useEffect(() => {
@@ -150,9 +151,9 @@ export default function HomePageClient({ backgroundImages }: HomePageClientProps
     }
   }, [backgroundImages]);
 
-  const addPhoto = (newPhotoData: Omit<Photo, 'id' | 'timestamp' | 'comments'>) => {
-     // In a real app, this would re-validate data. Here we just navigate.
-    router.push(`/gallery/${encodeURIComponent(newPhotoData.category)}`);
+  const addPhoto = () => {
+    // After upload, toast is shown. No redirect needed.
+    router.refresh();
   };
 
   return (
@@ -187,12 +188,16 @@ export default function HomePageClient({ backgroundImages }: HomePageClientProps
             A shared wedding photo album for our special day. Browse the gallery or upload your own memories.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <UploadDialog onPhotoAdd={addPhoto} trigger={
-              <Button size="lg" className="rounded-full shadow-lg">
-                <Camera className="mr-2" />
-                Upload Your Memory
-              </Button>
-            } />
+            <UploadDialog
+              onPhotoAdd={addPhoto}
+              initialView={isMobile ? 'camera' : 'upload'}
+              trigger={
+                <Button size="lg" className="rounded-full shadow-lg">
+                  <Camera className="mr-2" />
+                  Upload Your Memory
+                </Button>
+              }
+            />
             <Link href="/gallery" passHref>
               <Button size="lg" variant="outline" className="rounded-full shadow-lg bg-white/20 border-white text-white hover:bg-white/30">
                 View Gallery <ArrowRight className="ml-2" />
