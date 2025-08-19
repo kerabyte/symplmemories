@@ -204,7 +204,10 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
       status: 'pending',
     }));
     setFiles(prev => [...prev, ...newUploads]);
-    setView('upload'); // Switch back to upload view after selection
+    // Switch to upload view ONLY if coming from camera, so user can see their captured photo
+    if (view === 'camera') {
+      setView('upload');
+    }
   };
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -830,5 +833,3 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
     </>
   );
 }
-
-    
