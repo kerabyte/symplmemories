@@ -77,33 +77,59 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
   const [view, setView] = React.useState<'upload' | 'camera'>(initialView);
   const [stream, setStream] = React.useState<MediaStream | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
+  const [videoDevices, setVideoDevices] = React.useState<MediaDeviceInfo[]>([]);
+  const [currentDeviceIndex, setCurrentDeviceIndex] = React.useState(0);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
 
   const { toast } = useToast();
 
-  const resetState = () => {
+  const cleanupStream = React.useCallback(() => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  }, [stream]);
+
+  const resetState = React.useCallback(() => {
     setFiles([]);
     setCategoryId('');
     setIsSubmitting(false);
     setView(initialView);
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-    setStream(null);
+    cleanupStream();
     setHasCameraPermission(null);
-  };
+    setVideoDevices([]);
+    setCurrentDeviceIndex(0);
+  }, [initialView, cleanupStream]);
   
-  const getCameraPermission = React.useCallback(async () => {
-    if (stream) return;
+  const getCamera = React.useCallback(async (deviceId?: string) => {
+    cleanupStream(); // Ensure previous stream is stopped
+    
+    const constraints: MediaStreamConstraints = {
+      video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "environment" }
+    };
+    
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
       setHasCameraPermission(true);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
+      
+      // After getting permission, list all video devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter(d => d.kind === 'videoinput');
+      setVideoDevices(videoInputs);
+      
+      // Update current device index
+      const currentDeviceId = mediaStream.getVideoTracks()[0].getSettings().deviceId;
+      const index = videoInputs.findIndex(d => d.deviceId === currentDeviceId);
+      if (index !== -1) {
+        setCurrentDeviceIndex(index);
+      }
+
     } catch (error) {
       console.error('Error accessing camera:', error);
       setHasCameraPermission(false);
@@ -113,25 +139,28 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
         description: 'Please enable camera permissions in your browser settings to use this feature.',
       });
     }
-  }, [stream, toast]);
+  }, [cleanupStream, toast]);
+
+  const handleSwitchCamera = () => {
+    if (videoDevices.length > 1) {
+      const nextIndex = (currentDeviceIndex + 1) % videoDevices.length;
+      setCurrentDeviceIndex(nextIndex);
+      getCamera(videoDevices[nextIndex].deviceId);
+    }
+  };
 
   React.useEffect(() => {
-    if (open) {
-      setView(initialView); // Set initial view when dialog opens
+    if (open && view === 'camera' && !stream) {
+      getCamera();
     }
-  }, [open, initialView]);
-
-  React.useEffect(() => {
-    if (open && view === 'camera') {
-      getCameraPermission();
-    }
+    
     // Cleanup stream on dialog close or view change
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (!open || view !== 'camera') {
+        cleanupStream();
       }
     };
-  }, [open, view, stream, getCameraPermission]);
+  }, [open, view, stream, getCamera, cleanupStream]);
 
 
   const fetchCategories = React.useCallback(async () => {
@@ -159,11 +188,12 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
   React.useEffect(() => {
     if (open) {
       fetchCategories();
+      setView(initialView);
     } else {
       // Reset state when dialog is closed
       setTimeout(resetState, 300);
     }
-  }, [open, fetchCategories]);
+  }, [open, fetchCategories, initialView, resetState]);
 
 
   const processFiles = (selectedFiles: FileList) => {
@@ -677,10 +707,18 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
                 </div>
             )}
         </div>
-        <Button onClick={handleCapture} size="lg" className="rounded-full h-16 w-16 p-0" disabled={!hasCameraPermission || isSubmitting}>
-            <CircleDotDashed className="h-10 w-10" />
-            <span className="sr-only">Capture Photo</span>
-        </Button>
+        <div className="flex items-center justify-center gap-4">
+            <Button onClick={handleCapture} size="lg" className="rounded-full h-16 w-16 p-0" disabled={!hasCameraPermission || isSubmitting}>
+                <CircleDotDashed className="h-10 w-10" />
+                <span className="sr-only">Capture Photo</span>
+            </Button>
+            {videoDevices.length > 1 && (
+                <Button onClick={handleSwitchCamera} variant="outline" size="icon" className="rounded-full h-12 w-12" disabled={isSubmitting}>
+                    <RefreshCw className="h-6 w-6" />
+                    <span className="sr-only">Switch Camera</span>
+                </Button>
+            )}
+        </div>
     </div>
   );
 
@@ -719,7 +757,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
               </DialogDescription>
             </DialogHeader>
             
-            <div className="relative p-1 bg-muted rounded-full flex items-center">
+            <div className="relative p-1 bg-muted rounded-full flex items-center my-4">
               <div
                 className="absolute top-1 bottom-1 left-1 w-[calc(50%-0.25rem)] bg-background rounded-full shadow-sm transition-transform duration-300 ease-in-out"
                 style={{ transform: `translateX(${view === 'camera' ? '100%' : '0%'})` }}
@@ -792,3 +830,5 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
     </>
   );
 }
+
+    
