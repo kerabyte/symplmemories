@@ -718,30 +718,34 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
                 Share photos from the special day. Supports JPG, PNG, WEBP, HEIC and more.
               </DialogDescription>
             </DialogHeader>
-
-            <div className="p-1 bg-muted rounded-full flex items-center">
-                 <Button
-                    type="button"
-                    onClick={() => setView('upload')}
-                    className={cn(
-                        "flex-1 rounded-full text-muted-foreground transition-colors",
-                        view === 'upload' && "bg-background text-foreground shadow-sm"
-                    )}
-                    variant="ghost"
-                    >
-                    Upload
-                </Button>
-                 <Button
-                    type="button"
-                    onClick={() => setView('camera')}
-                    className={cn(
-                        "flex-1 rounded-full text-muted-foreground transition-colors",
-                        view === 'camera' && "bg-background text-foreground shadow-sm"
-                    )}
-                    variant="ghost"
-                    >
-                    Camera
-                </Button>
+            
+            <div className="relative p-1 bg-muted rounded-full flex items-center">
+              <div
+                className="absolute top-1 bottom-1 left-1 w-[calc(50%-0.25rem)] bg-background rounded-full shadow-sm transition-transform duration-300 ease-in-out"
+                style={{ transform: `translateX(${view === 'camera' ? '100%' : '0%'})` }}
+              />
+              <Button
+                type="button"
+                onClick={() => setView('upload')}
+                className={cn(
+                    "flex-1 rounded-full transition-colors z-10",
+                    view === 'upload' ? "text-foreground" : "text-muted-foreground"
+                )}
+                variant="ghost"
+                >
+                Upload
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setView('camera')}
+                className={cn(
+                    "flex-1 rounded-full transition-colors z-10",
+                    view === 'camera' ? "text-foreground" : "text-muted-foreground"
+                )}
+                variant="ghost"
+                >
+                Camera
+              </Button>
             </div>
 
             <div className="flex-1 min-h-0 py-4 grid gap-4">
