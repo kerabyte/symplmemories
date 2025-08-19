@@ -724,28 +724,26 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
                 className="absolute top-1 bottom-1 left-1 w-[calc(50%-0.25rem)] bg-background rounded-full shadow-sm transition-transform duration-300 ease-in-out"
                 style={{ transform: `translateX(${view === 'camera' ? '100%' : '0%'})` }}
               />
-              <Button
+              <button
                 type="button"
                 onClick={() => setView('upload')}
                 className={cn(
-                    "flex-1 rounded-full transition-colors z-10",
+                    "flex-1 rounded-full transition-colors z-10 py-1.5 text-sm",
                     view === 'upload' ? "text-foreground" : "text-muted-foreground"
                 )}
-                variant="ghost"
                 >
                 Upload
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
                 onClick={() => setView('camera')}
                 className={cn(
-                    "flex-1 rounded-full transition-colors z-10",
+                    "flex-1 rounded-full transition-colors z-10 py-1.5 text-sm",
                     view === 'camera' ? "text-foreground" : "text-muted-foreground"
                 )}
-                variant="ghost"
                 >
                 Camera
-              </Button>
+              </button>
             </div>
 
             <div className="flex-1 min-h-0 py-4 grid gap-4">
