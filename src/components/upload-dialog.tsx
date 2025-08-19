@@ -204,7 +204,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
       status: 'pending',
     }));
     setFiles(prev => [...prev, ...newUploads]);
-    // Switch to upload view ONLY if coming from camera, so user can see their captured photo
+    // After capturing a photo, switch to the upload view so the user can see their captured photo and proceed to upload.
     if (view === 'camera') {
       setView('upload');
     }
@@ -833,3 +833,5 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
     </>
   );
 }
+
+    
