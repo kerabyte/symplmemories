@@ -190,7 +190,7 @@ export default function HomePageClient({ backgroundImages }: HomePageClientProps
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <UploadDialog
               onPhotoAdd={addPhoto}
-              initialView={isMobile ? 'camera' : 'upload'}
+              initialView={'upload'}
               trigger={
                 <Button size="lg" className="rounded-full shadow-lg">
                   <Camera className="mr-2" />

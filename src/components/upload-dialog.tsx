@@ -116,6 +116,12 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
   }, [stream, toast]);
 
   React.useEffect(() => {
+    if (open) {
+      setView(initialView); // Set initial view when dialog opens
+    }
+  }, [open, initialView]);
+
+  React.useEffect(() => {
     if (open && view === 'camera') {
       getCameraPermission();
     }
@@ -713,11 +719,29 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
               </DialogDescription>
             </DialogHeader>
 
-            <div className="my-4 border-b">
-                 <div className="flex justify-around">
-                     <Button type="button" variant={view === 'upload' ? 'ghost' : 'ghost'} onClick={() => setView('upload')} className={cn("flex-1 rounded-none", view === 'upload' && "border-b-2 border-primary text-primary")}>Upload</Button>
-                     <Button type="button" variant={view === 'camera' ? 'ghost' : 'ghost'} onClick={() => setView('camera')} className={cn("flex-1 rounded-none", view === 'camera' && "border-b-2 border-primary text-primary")}>Camera</Button>
-                </div>
+            <div className="p-1 bg-muted rounded-full flex items-center">
+                 <Button
+                    type="button"
+                    onClick={() => setView('upload')}
+                    className={cn(
+                        "flex-1 rounded-full text-muted-foreground transition-colors",
+                        view === 'upload' && "bg-background text-foreground shadow-sm"
+                    )}
+                    variant="ghost"
+                    >
+                    Upload
+                </Button>
+                 <Button
+                    type="button"
+                    onClick={() => setView('camera')}
+                    className={cn(
+                        "flex-1 rounded-full text-muted-foreground transition-colors",
+                        view === 'camera' && "bg-background text-foreground shadow-sm"
+                    )}
+                    variant="ghost"
+                    >
+                    Camera
+                </Button>
             </div>
 
             <div className="flex-1 min-h-0 py-4 grid gap-4">
