@@ -35,6 +35,8 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 
+
+
 interface Category {
   catID: string;
   catName: string;
@@ -102,14 +104,16 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
     setVideoDevices([]);
     setCurrentDeviceIndex(0);
   }, [initialView, cleanupStream]);
-  
+
+
+
   const getCamera = React.useCallback(async (deviceId?: string) => {
     cleanupStream(); // Ensure previous stream is stopped
-    
+
     const constraints: MediaStreamConstraints = {
       video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "environment" }
     };
-    
+
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
@@ -117,12 +121,12 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
-      
+
       // After getting permission, list all video devices
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoInputs = devices.filter(d => d.kind === 'videoinput');
       setVideoDevices(videoInputs);
-      
+
       // Update current device index
       const currentDeviceId = mediaStream.getVideoTracks()[0].getSettings().deviceId;
       const index = videoInputs.findIndex(d => d.deviceId === currentDeviceId);
@@ -153,7 +157,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
     if (open && view === 'camera' && !stream) {
       getCamera();
     }
-    
+
     // Cleanup stream on dialog close or view change
     return () => {
       if (!open || view !== 'camera') {
@@ -215,7 +219,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
       processFiles(e.target.files);
     }
   };
-  
+
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
@@ -348,32 +352,59 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
       try {
         console.log(`🔄 Converting HEIC file: ${file.name}`);
 
-        // Dynamically import heic2any to avoid SSR issues
-        const { default: heic2any } = await import('heic2any');
+        // Dynamically import heic-to to avoid SSR issues
+        const { heicTo, isHeic } = await import('heic-to');
 
-        const convertedBlob = await heic2any({
+        // First check if the file is actually HEIC
+        const isHeicFile = await isHeic(file);
+        if (!isHeicFile) {
+          console.log(`ℹ️ File ${file.name} has .heic extension but is not actually HEIC, skipping conversion`);
+          return file;
+        }
+
+        // Convert HEIC directly to WebP to avoid double conversion
+        const convertedBlob = await heicTo({
           blob: file,
-          toType: 'image/jpeg',
-          quality: 0.95, // High quality for initial conversion
+          type: 'image/webp',
+          quality: 0.65, // Lower quality for better compression
         });
 
-        // heic2any can return Blob or Blob[], handle both cases
-        const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-        const convertedFile = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
-          type: 'image/jpeg',
+        const convertedFile = new File([convertedBlob], file.name.replace(/\.(heic|heif)$/i, '.webp'), {
+          type: 'image/webp',
           lastModified: file.lastModified,
         });
 
         console.log(`✅ HEIC conversion complete: ${file.name} → ${convertedFile.name}`);
         return convertedFile;
       } catch (error: any) {
-        // Check if the error is because the file is already browser-readable
-        if (error?.code === 1 && error?.message?.includes('already browser readable')) {
-          console.log(`ℹ️ File ${file.name} with .heic extension is already browser-readable (${file.type || 'unknown type'}), skipping conversion`);
-          return file; // Return original file as it's already compatible
-        } else {
-          console.error(`❌ HEIC conversion failed for ${file.name}:`, error);
-          throw new Error(`Failed to convert HEIC file: ${file.name}. ${error?.message || ''}`);
+        console.error(`❌ HEIC conversion failed for ${file.name}:`, error);
+
+        // Try to handle the file as a regular image if heic-to fails
+        console.log(`🔄 Attempting to process ${file.name} as regular image despite HEIC extension`);
+
+        // Check if the file can be loaded as an image directly
+        try {
+          const testImg = new (window as any).Image();
+          const testUrl = URL.createObjectURL(file);
+
+          await new Promise((resolve, reject) => {
+            testImg.onload = () => {
+              URL.revokeObjectURL(testUrl);
+              console.log(`✅ File ${file.name} can be processed as regular image despite HEIC extension`);
+              resolve(true);
+            };
+            testImg.onerror = () => {
+              URL.revokeObjectURL(testUrl);
+              reject(new Error('Cannot load as image'));
+            };
+            testImg.src = testUrl;
+          });
+
+          // If we get here, the file can be processed as a regular image
+          return file;
+        } catch (imgError) {
+          console.error(`❌ File ${file.name} cannot be processed as image:`, imgError);
+          throw new Error(`HEIC file ${file.name} is not supported. Please convert it to JPEG, PNG, or WebP format before uploading.`);
         }
       }
     }
@@ -382,58 +413,23 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
     return file;
   };
 
-  // Helper function to compress and convert image to WebP
-  const compressImageToWebP = async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      // Use native Image constructor to avoid conflicts with Next.js Image component
-      const img = new (window as any).Image();
+  // Simple function to return file as-is (no compression)
+  const processImageAsIs = async (file: File): Promise<string> => {
+    const originalSizeKB = Math.round(file.size / 1024);
+    console.log(`📤 Uploaded image: ${file.name} (${originalSizeKB}KB)`);
+    console.log(`✅ Using original file without any compression`);
 
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-
-          if (!ctx) {
-            reject(new Error('Could not get canvas context'));
-            return;
-          }
-
-          // Calculate optimal dimensions (max 4096px)
-          const maxDimension = 4096;
-          let { width, height } = img;
-
-          if (width > maxDimension || height > maxDimension) {
-            const ratio = Math.min(maxDimension / width, maxDimension / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          // Use high-quality scaling
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-
-          // Draw image
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Convert to WebP with 90% quality (0.90)
-          const compressedDataUrl = canvas.toDataURL('image/webp', 0.90);
-          resolve(compressedDataUrl);
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      img.onerror = () => reject(new Error('Failed to load image'));
-
-      // Convert file to data URL first
+    return new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => img.src = reader.result as string;
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
       reader.readAsDataURL(file);
     });
   };
+
+
+
+
 
 
 
@@ -448,55 +444,66 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
     setIsSubmitting(true);
 
     try {
-      // Step 1: Compress all pending files
-      const compressionPromises = files.map(async (f) => {
-        if (f.status === 'pending') {
-          try {
-            // Check file size (20MB limit)
-            const fileSizeMB = f.file.size / (1024 * 1024);
-            if (fileSizeMB > 20) {
-              throw new Error('File size exceeds 20MB limit.');
-            }
+      // Step 1: Compress all pending files with progress updates
+      const pendingFiles = files.filter(f => f.status === 'pending');
+      const totalFiles = pendingFiles.length;
 
-            console.log(`🖼️ Processing image: ${f.file.name}`);
+      // Update all files to uploading status
+      setFiles(prev => prev.map(f =>
+        f.status === 'pending' ? { ...f, status: 'uploading' } : f
+      ));
 
-            // Step 1: Convert HEIC and other formats to browser-compatible format
-            const convertedFile = await convertImageFormat(f.file);
-
-            // Step 2: Compress to WebP
-            console.log(`🗜️ Compressing to WebP: ${convertedFile.name}`);
-            const compressedImage = await compressImageToWebP(convertedFile);
-
-            // Log compression results
-            const originalSize = f.file.size;
-            const compressedSize = Math.round((compressedImage.length * 3) / 4);
-            const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
-
-            console.log(`📦 Compression complete for ${f.file.name}:
-                        Original: ${Math.round(originalSize / 1024)}KB
-                        Compressed WebP (90%): ${Math.round(compressedSize / 1024)}KB  
-                        Saved: ${compressionRatio}%`);
-
-            return { id: f.id, compressedImage, fileName: f.file.name };
-          } catch (error) {
-            console.error(`Compression failed for ${f.file.name}:`, error);
-            return { id: f.id, error: (error as Error).message };
+      const compressionPromises = pendingFiles.map(async (f, index) => {
+        try {
+          // Check file size (20MB limit)
+          const fileSizeMB = f.file.size / (1024 * 1024);
+          if (fileSizeMB > 20) {
+            throw new Error('File size exceeds 20MB limit.');
           }
+
+          console.log(`🖼️ Processing image ${index + 1}/${totalFiles}: ${f.file.name}`);
+
+          // Step 1: Convert HEIC and other formats to browser-compatible format
+          const convertedFile = await convertImageFormat(f.file);
+
+          // Step 2: Compress to WebP with size validation
+          let compressedImage: string;
+          const convertedFileSizeMB = convertedFile.size / (1024 * 1024);
+
+          // Skip files that are too large
+          if (convertedFileSizeMB > 8) {
+            throw new Error(`File ${convertedFile.name} is too large (${convertedFileSizeMB.toFixed(1)}MB). Please use a smaller image.`);
+          }
+
+          // Use original file without any compression
+          console.log(`📁 Processing file: ${convertedFile.name} (${convertedFileSizeMB.toFixed(1)}MB)`);
+          compressedImage = await processImageAsIs(convertedFile);
+
+          // Log final results
+          const originalSize = f.file.size;
+          const finalSize = Math.round((compressedImage.length * 3) / 4);
+          const format = compressedImage.includes('data:image/webp') ? 'WebP' : 'JPEG';
+
+          console.log(`📤 Final image for S3: ${f.file.name} (${Math.round(finalSize / 1024)}KB, ${format})`);
+
+          return { id: f.id, compressedImage, fileName: f.file.name };
+        } catch (error) {
+          console.error(`Compression failed for ${f.file.name}:`, error);
+          return { id: f.id, error: (error as Error).message };
         }
-        return null;
       });
 
       const compressionResults = await Promise.all(compressionPromises);
-      const validCompressions = compressionResults.filter(r => r && !r.error);
-      const failedCompressions = compressionResults.filter(r => r && r.error);
+      const validCompressions = compressionResults.filter((r: any) => r && !r.error);
+      const failedCompressions = compressionResults.filter((r: any) => r && r.error);
 
       // Update state with compression results
       setFiles(prev => prev.map(f => {
-        const successful = validCompressions.find(c => c?.id === f.id);
+        const successful = validCompressions.find((c: any) => c?.id === f.id);
         if (successful && 'compressedImage' in successful) {
           return { ...f, status: 'completed', s3Url: successful.compressedImage };
         }
-        const failed = failedCompressions.find(c => c?.id === f.id);
+        const failed = failedCompressions.find((c: any) => c?.id === f.id);
         if (failed && 'error' in failed) {
           return { ...f, status: 'error', error: failed.error };
         }
@@ -513,43 +520,99 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
         return;
       }
 
-      // Step 2: Upload compressed images to S3
-      const imagesToUpload = validCompressions.map(vc => ({
+      // Step 2: Upload compressed images to S3 in chunks
+      const imagesToUpload = validCompressions.map((vc: any) => ({
         image: vc?.compressedImage || '',
         fileName: vc?.fileName || ''
       }));
 
-      console.log(`🚀 Uploading ${imagesToUpload.length} compressed images to S3...`);
+      console.log(`🚀 Uploading ${imagesToUpload.length} compressed images to S3 in chunks...`);
 
-      const uploadResponse = await fetch('/api/user/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images: imagesToUpload }),
-      });
-
-      const uploadData = await uploadResponse.json();
-
-      if (!uploadResponse.ok || !uploadData.urls || uploadData.urls.length === 0) {
-        throw new Error(uploadData.issue || 'Failed to upload images to S3.');
+      // Upload in chunks of 1 image to avoid timeout
+      const chunkSize = 1;
+      const chunks = [];
+      for (let i = 0; i < imagesToUpload.length; i += chunkSize) {
+        chunks.push(imagesToUpload.slice(i, i + chunkSize));
       }
 
-      console.log(`✅ Successfully uploaded ${uploadData.totalSuccess} images to S3`);
+      const allUrls: string[] = [];
+      let totalSuccess = 0;
+      let totalFailed = 0;
 
-      if (uploadData.totalFailed > 0) {
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        console.log(`📤 Uploading chunk ${i + 1}/${chunks.length} (${chunk.length} images)...`);
+
+        // Update progress in UI
+        toast({
+          title: "Uploading...",
+          description: `Uploading chunk ${i + 1} of ${chunks.length} (${chunk.length} images)`,
+        });
+
+        let retryCount = 0;
+        const maxRetries = 3;
+        let uploadSuccess = false;
+
+        while (retryCount < maxRetries && !uploadSuccess) {
+          try {
+            console.log(`📤 Attempting upload chunk ${i + 1} (attempt ${retryCount + 1}/${maxRetries})...`);
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+            const uploadResponse = await fetch('/api/user/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ images: chunk }),
+              signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            const uploadData = await uploadResponse.json();
+
+            if (!uploadResponse.ok || !uploadData.urls || uploadData.urls.length === 0) {
+              throw new Error(uploadData.issue || `Failed to upload chunk ${i + 1}.`);
+            }
+
+            allUrls.push(...uploadData.urls);
+            totalSuccess += uploadData.totalSuccess || uploadData.urls.length;
+            totalFailed += uploadData.totalFailed || 0;
+
+            console.log(`✅ Chunk ${i + 1} uploaded successfully: ${uploadData.urls.length} images`);
+            uploadSuccess = true;
+          } catch (error) {
+            retryCount++;
+            console.error(`❌ Failed to upload chunk ${i + 1} (attempt ${retryCount}/${maxRetries}):`, error);
+
+            if (retryCount >= maxRetries) {
+              totalFailed += chunk.length;
+              throw new Error(`Failed to upload chunk ${i + 1} after ${maxRetries} attempts: ${(error as Error).message}`);
+            }
+
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+        }
+      }
+
+      console.log(`✅ Successfully uploaded ${totalSuccess} images to S3`);
+
+      if (totalFailed > 0) {
         toast({
           variant: "destructive",
           title: "Partial Upload Failed",
-          description: `${uploadData.totalFailed} image(s) could not be uploaded to S3.`
+          description: `${totalFailed} image(s) could not be uploaded to S3.`
         });
       }
 
       // Step 3: Submit URLs to backend
-      console.log(`📤 Sending ${uploadData.urls.length} image URLs to backend...`);
+      console.log(`📤 Sending ${allUrls.length} image URLs to backend...`);
 
       const addImagesResponse = await fetch('/api/wedding/images/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageURLs: uploadData.urls, catID: categoryId }),
+        body: JSON.stringify({ imageURLs: allUrls, catID: categoryId }),
       });
 
       if (!addImagesResponse.ok) {
@@ -558,14 +621,14 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
       }
 
       const backendData = await addImagesResponse.json();
-      console.log(`✅ Successfully added ${backendData.totalCreated || uploadData.urls.length} images to gallery`);
+      console.log(`✅ Successfully added ${backendData.totalCreated || allUrls.length} images to gallery`);
 
       toast({
         title: 'Upload Complete!',
         description: `Image has been uploaded. Will be shown in gallery pending Approval from Admin`,
       });
 
-      onPhotoAdd({ 
+      onPhotoAdd({
         url: '', // These are not used since we don't redirect
         author: '',
         description: '',
@@ -586,7 +649,8 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
       setIsSubmitting(false);
     }
   };
-  
+
+
   const renderUploadView = () => (
     <>
       {files.length === 0 ? (
@@ -688,40 +752,40 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
 
   const renderCameraView = () => (
     <div className="flex flex-col items-center gap-4">
-        <div className="w-full relative aspect-[9/16] max-h-[40vh] bg-black rounded-lg overflow-hidden">
-             <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-            <canvas ref={canvasRef} className="hidden" />
+      <div className="w-full relative aspect-[9/16] max-h-[40vh] bg-black rounded-lg overflow-hidden">
+        <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+        <canvas ref={canvasRef} className="hidden" />
 
-            {hasCameraPermission === null && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black/50">
-                    <Loader2 className="h-8 w-8 animate-spin mb-2" />
-                    <p>Starting camera...</p>
-                </div>
-            )}
-             {hasCameraPermission === false && (
-                 <div className="absolute inset-0 flex items-center justify-center">
-                    <Alert variant="destructive" className="m-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Camera Access Denied</AlertTitle>
-                        <AlertDescription>
-                            Please allow camera access in your browser settings to use this feature.
-                        </AlertDescription>
-                    </Alert>
-                </div>
-            )}
-        </div>
-        <div className="flex items-center justify-center gap-4">
-            <Button onClick={handleCapture} size="lg" className="rounded-full h-16 w-16 p-0" disabled={!hasCameraPermission || isSubmitting}>
-                <CircleDotDashed className="h-10 w-10" />
-                <span className="sr-only">Capture Photo</span>
-            </Button>
-            {videoDevices.length > 1 && (
-                <Button onClick={handleSwitchCamera} variant="outline" size="icon" className="rounded-full h-12 w-12" disabled={isSubmitting}>
-                    <RefreshCw className="h-6 w-6" />
-                    <span className="sr-only">Switch Camera</span>
-                </Button>
-            )}
-        </div>
+        {hasCameraPermission === null && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black/50">
+            <Loader2 className="h-8 w-8 animate-spin mb-2" />
+            <p>Starting camera...</p>
+          </div>
+        )}
+        {hasCameraPermission === false && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Alert variant="destructive" className="m-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Camera Access Denied</AlertTitle>
+              <AlertDescription>
+                Please allow camera access in your browser settings to use this feature.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-center gap-4">
+        <Button onClick={handleCapture} size="lg" className="rounded-full h-16 w-16 p-0" disabled={!hasCameraPermission || isSubmitting}>
+          <CircleDotDashed className="h-10 w-10" />
+          <span className="sr-only">Capture Photo</span>
+        </Button>
+        {videoDevices.length > 1 && (
+          <Button onClick={handleSwitchCamera} variant="outline" size="icon" className="rounded-full h-12 w-12" disabled={isSubmitting}>
+            <RefreshCw className="h-6 w-6" />
+            <span className="sr-only">Switch Camera</span>
+          </Button>
+        )}
+      </div>
     </div>
   );
 
@@ -759,7 +823,7 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
                 Share your memories with us
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="relative p-1 bg-muted rounded-full flex items-center my-4">
               <div
                 className="absolute top-1 bottom-1 left-1 w-[calc(50%-0.25rem)] bg-background rounded-full shadow-sm transition-transform duration-300 ease-in-out"
@@ -769,38 +833,38 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
                 type="button"
                 onClick={() => setView('upload')}
                 className={cn(
-                    "flex-1 rounded-full transition-colors z-10 py-1.5 text-sm",
-                    view === 'upload' ? "text-foreground" : "text-muted-foreground"
+                  "flex-1 rounded-full transition-colors z-10 py-1.5 text-sm",
+                  view === 'upload' ? "text-foreground" : "text-muted-foreground"
                 )}
-                >
+              >
                 Upload
               </button>
               <button
                 type="button"
                 onClick={() => setView('camera')}
                 className={cn(
-                    "flex-1 rounded-full transition-colors z-10 py-1.5 text-sm",
-                    view === 'camera' ? "text-foreground" : "text-muted-foreground"
+                  "flex-1 rounded-full transition-colors z-10 py-1.5 text-sm",
+                  view === 'camera' ? "text-foreground" : "text-muted-foreground"
                 )}
-                >
+              >
                 Camera
               </button>
             </div>
 
             <div className="flex-1 min-h-0 py-4 grid gap-4">
-                {view === 'upload' ? renderUploadView() : renderCameraView()}
+              {view === 'upload' ? renderUploadView() : renderCameraView()}
             </div>
 
             {view === 'upload' && (
-                 <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline" disabled={isSubmitting}>Cancel</Button>
-                    </DialogClose>
-                    <Button type="submit" disabled={isSubmitting || files.length === 0 || !categoryId}>
-                      {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {isSubmitting ? 'Submitting...' : `Upload ${files.length} Photo(s)`}
-                    </Button>
-                </DialogFooter>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline" disabled={isSubmitting}>Cancel</Button>
+                </DialogClose>
+                <Button type="submit" disabled={isSubmitting || files.length === 0 || !categoryId}>
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {isSubmitting ? 'Submitting...' : `Upload ${files.length} Photo(s)`}
+                </Button>
+              </DialogFooter>
             )}
           </form>
         </DialogContent>
@@ -834,4 +898,3 @@ export function UploadDialog({ onPhotoAdd, isMobile, trigger, initialView = 'upl
   );
 }
 
-    
